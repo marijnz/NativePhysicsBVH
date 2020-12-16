@@ -23,7 +23,7 @@ namespace NativeBVH {
 		
 		private int rootIndex;
 		
-		private NativeArray<HeapItem> heap;
+		private UnsafeMinHeap insertionHeap;
 
 		public NativeBVHTree(Allocator allocator = Allocator.Temp, int initialCapacity = 64) : this() {
 			nodes = UnsafeList.Create(UnsafeUtility.SizeOf<Node>(),
@@ -35,11 +35,11 @@ namespace NativeBVH {
 			// Create invalid node (at index 0)
 			AllocInternalNode();
 			
-			heap = new NativeArray<HeapItem>(64, allocator);
+			insertionHeap = new UnsafeMinHeap(allocator, 32);
 		}
 
 		public int InsertLeaf(AABB3D insertedLeaf) {
-			UnsafeUtility.MemClear(heap.GetUnsafePtr(), sizeof(HeapItem) * heap.Length);
+			insertionHeap.Clear();
 			
 			var leafIndex = AllocLeafNode(insertedLeaf);
 			
@@ -51,15 +51,15 @@ namespace NativeBVH {
 			// Stage 1: find the best sibling for the new leaf
 			float bestCost = GetNode(rootIndex)->Box.Union(insertedLeaf).Area();
 			int bestIndex = rootIndex;
-			push(new HeapItem {Id = rootIndex, InheritedCost = 0});
+			insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = rootIndex, Cost = 0});
 
-			while (Count != 0) {
-				var heapItem = pop();
+			while (insertionHeap.Count != 0) {
+				var heapItem = insertionHeap.Pop();
 				var node = GetNode(heapItem.Id);
 
 				var union = node->Box.Union(insertedLeaf);
 				var directCost = union.Area();
-				var cost = directCost + heapItem.InheritedCost;
+				var cost = directCost + heapItem.Cost;
 
 				if (cost < bestCost) {
 					bestCost = cost;
@@ -67,16 +67,16 @@ namespace NativeBVH {
 				}
 
 				var extraInheritedCost = union.Area() - node->Box.Area();
-				var totalInheritedCost = heapItem.InheritedCost + extraInheritedCost;
+				var totalInheritedCost = heapItem.Cost + extraInheritedCost;
 
 				var lowerBoundChildrenCost = insertedLeaf.Area() + totalInheritedCost;
 
 				if (lowerBoundChildrenCost < cost) {
 					if (node->Child1 != InvalidNode) {
-						push(new HeapItem {Id = node->Child1, InheritedCost = totalInheritedCost});
+						insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = node->Child1, Cost = totalInheritedCost});
 					}
 					if (node->Child2 != InvalidNode) {
-						push(new HeapItem {Id = node->Child2, InheritedCost = totalInheritedCost});
+						insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = node->Child2, Cost = totalInheritedCost});
 					}
 				}
 			}
@@ -145,8 +145,9 @@ namespace NativeBVH {
 		}
 
 		public void Dispose() {
-			UnsafeList.Destroy(nodes);
+			nodes->Dispose();
 			nodes = null;
+			insertionHeap.Dispose();
 		}
 
 		public int DebugGetRootNodeIndex() {
@@ -156,65 +157,5 @@ namespace NativeBVH {
 		public Node DebugGetNode(int index) {
 			return *GetNode(index);
 		}
-		
-		// TODO: Separate heap
-		#region Heap (Prio Queue)
-
-		public struct HeapItem
-		{
-			public int Id;
-			public float InheritedCost;
-		}
-
-		static readonly HeapItem defaultEdge = default;
-		public int Count { get; set; }
-
-		public void push(HeapItem v)
-		{
-			// Usually this would be the place so increase size of heap if needed, but it's pre-allocated.
-			heap[Count] = v;
-			SiftUp(Count++);
-		}
-
-		public HeapItem pop()
-		{
-			var v = top();
-			heap[0] = heap[--Count];
-			if (Count > 0) SiftDown(0);
-			return v;
-		}
-
-		public HeapItem top()
-		{
-			if (Count > 0) return heap[0];
-			return defaultEdge;
-		}
-
-		void SiftUp(int n)
-		{
-			var v = heap[n];
-			for (var n2 = n / 2; n > 0 && CompareCost(v, heap[n2]) > 0; n = n2, n2 /= 2) heap[n] = heap[n2];
-			heap[n] = v;
-		}
-		void SiftDown(int n)
-		{
-			var v = heap[n];
-			for (var n2 = n * 2; n2 < Count; n = n2, n2 *= 2)
-			{
-				if (n2 + 1 < Count && CompareCost(heap[n2 + 1], heap[n2]) > 0) n2++;
-				if (CompareCost(v, heap[n2]) >= 0) break;
-				heap[n] = heap[n2];
-			}
-			heap[n] = v;
-		}
-
-		int CompareCost(HeapItem a, HeapItem b)
-		{
-			if(a.InheritedCost < b.InheritedCost) return 1;
-			if(a.InheritedCost > b.InheritedCost) return -1;
-			return 0;
-		}
-
-		#endregion
 	}
 }
