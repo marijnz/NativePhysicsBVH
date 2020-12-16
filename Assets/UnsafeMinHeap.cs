@@ -3,13 +3,17 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace NativeBVH {
+	/// <summary>
+	/// Simple min-heap.
+	/// TODO: Dynamic resizing
+	/// </summary>
 	public unsafe struct UnsafeMinHeap : IDisposable {
 		public struct HeapItem {
 			public int Id;
 			public float Cost;
 		}
 		
-		public UnsafeMinHeap(Allocator allocator = Allocator.Temp, int initialCapacity = 64) : this() {
+		public UnsafeMinHeap(int initialCapacity = 64, Allocator allocator = Allocator.Temp) : this() {
 			heap = new NativeArray<HeapItem>(initialCapacity, allocator);
 		}
 

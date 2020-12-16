@@ -15,7 +15,7 @@ namespace NativeBVH {
 	/// <summary>
 	/// Implemented per https://box2d.org/files/ErinCatto_DynamicBVH_GDC2019.pdf. WIP.
 	/// </summary>
-	public unsafe struct NativeBVHTree : IDisposable {
+	public unsafe partial struct NativeBVHTree : IDisposable {
 		public const int InvalidNode = 0;
 		
 		[NativeDisableUnsafePtrRestriction]
@@ -25,7 +25,7 @@ namespace NativeBVH {
 		
 		private UnsafeMinHeap insertionHeap;
 
-		public NativeBVHTree(Allocator allocator = Allocator.Temp, int initialCapacity = 64) : this() {
+		public NativeBVHTree(int initialCapacity = 64, Allocator allocator = Allocator.Temp) : this() {
 			nodes = UnsafeList.Create(UnsafeUtility.SizeOf<Node>(),
 				UnsafeUtility.AlignOf<Node>(),
 				initialCapacity,
@@ -35,7 +35,7 @@ namespace NativeBVH {
 			// Create invalid node (at index 0)
 			AllocInternalNode();
 			
-			insertionHeap = new UnsafeMinHeap(allocator, 32);
+			insertionHeap = new UnsafeMinHeap(initialCapacity, allocator);
 		}
 
 		public int InsertLeaf(AABB3D insertedLeaf) {

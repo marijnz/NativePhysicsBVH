@@ -1,17 +1,31 @@
-﻿using UnityEditor;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Unity.Collections;
+using Unity.Mathematics;
+using UnityEditor;
 using UnityEngine;
 
 namespace NativeBVH.Editor {
     [ExecuteInEditMode]
     public class NativeBVHDebugDrawer : MonoBehaviour {
+        public bool HideInternalNodes;
+        public bool HideLeafNodes;
+        
         public static NativeBVHTree LastTree;
+        public static int[] LastTreeRayHits;
 
         private int leafCount = 0;
+        public static NativeBVHTree.Ray LastRay;
 
         public void OnDrawGizmos() {
             leafCount = 0;
             Draw(LastTree.DebugGetRootNodeIndex());
             Handles.Label(Vector3.zero, "Leaf count: " + leafCount);
+
+            if (math.any(LastRay.Direction != float3.zero)) {
+                Gizmos.color = Color.red;
+                Gizmos.DrawLine(LastRay.Origin, LastRay.Origin + math.normalize(LastRay.Direction) * LastRay.MaxDistance);
+            }
         }
 
         private void Draw(int nodeIndex) {
@@ -26,9 +40,19 @@ namespace NativeBVH.Editor {
 
             var size = (box.UpperBound - box.LowerBound);
             var center = box.LowerBound + size / 2;
-            Gizmos.color = node.IsLeaf ? Color.white : Color.green;
-            Gizmos.DrawWireCube(new Vector3(center.x, center.y, center.z), new Vector3(size.x, size.y, size.z));
-            Handles.Label(new Vector3( box.LowerBound.x,  box.LowerBound.y, box.LowerBound.z), nodeIndex.ToString());
+
+            bool isHit = (LastTreeRayHits != null && LastTreeRayHits.Contains(nodeIndex));
+
+            if ((node.IsLeaf && !HideLeafNodes) || (!node.IsLeaf && !HideInternalNodes)) {
+                if (isHit) {
+                    Gizmos.color = Color.red;
+                } else {
+                    Gizmos.color = node.IsLeaf ? Color.white : Color.green;
+                }
+                Gizmos.DrawWireCube(new Vector3(center.x, center.y, center.z), new Vector3(size.x, size.y, size.z));
+                Handles.Label(new Vector3( box.LowerBound.x,  box.LowerBound.y, box.LowerBound.z), nodeIndex.ToString());
+            }
+            
             Draw(node.Child1);
             Draw(node.Child2);
             if (node.IsLeaf) {
