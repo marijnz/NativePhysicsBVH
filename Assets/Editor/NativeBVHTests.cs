@@ -1,7 +1,10 @@
-﻿using System.Linq;
+﻿using System.Diagnostics;
+using System.Linq;
 using NUnit.Framework;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
+using Debug = UnityEngine.Debug;
 
 namespace NativeBVH.Editor {
     public class NativeBVHTests {
@@ -80,6 +83,56 @@ namespace NativeBVH.Editor {
                 MaxDistance = 200
             };
             tree.RayCast(ray, rayResult);
+            
+            // Debug
+            NativeBVHDebugDrawer.LastTree = tree;
+            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastRay = ray;
+        }
+        
+        [Test]
+        public void TestJobRayRandomManyBoxes() {
+            // TODO: To fix -  this one misses a raycast hit
+            RunJob(1024);
+        }
+
+        private void RunJob(int amount) {
+            // Insertion
+            NativeList<AABB3D> leaves = new NativeList<AABB3D>(1024, Allocator.TempJob);
+            var tree = new NativeBVHTree(amount, Allocator.Persistent);
+            for (int i = 0; i < amount; i++) {
+                var lower = new float3(UnityEngine.Random.Range(0, 300), UnityEngine.Random.Range(0, 300),  UnityEngine.Random.Range(0, 300));
+                var upper = lower + new float3(UnityEngine.Random.Range(2, 5), UnityEngine.Random.Range(2, 5), UnityEngine.Random.Range(2, 5));
+                leaves.Add(new AABB3D(lower, upper));
+            }
+            
+            var s = Stopwatch.StartNew();
+            new AddLeavesJob {
+                Tree = tree,
+                Leaves = leaves
+            }.Run();
+            Debug.Log("Insertion took: " + s.Elapsed.TotalMilliseconds);
+            leaves.Dispose();
+            
+            // Prep raycast
+            var rayResult = new NativeList<int>(64, Allocator.TempJob);
+            var ray = new NativeBVHTree.Ray {
+                Origin = new float3(-10, -10, 0),
+                Direction = new float3(50, 50, 50),
+                MinDistance = 0,
+                MaxDistance = 500
+            };
+            
+            // Job
+            var job = new RaycastJob {
+                Tree = tree,
+                Ray = ray,
+                Results = rayResult
+            };
+
+            s.Restart();
+            job.Run();
+            Debug.Log("Took: " + s.Elapsed.TotalMilliseconds);
             
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;

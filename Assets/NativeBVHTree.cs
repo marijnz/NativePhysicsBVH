@@ -21,7 +21,7 @@ namespace NativeBVH {
 		[NativeDisableUnsafePtrRestriction]
 		private UnsafeList* nodes;
 		
-		private int rootIndex;
+		private NativeArray<int> rootIndex;
 		
 		private UnsafeMinHeap insertionHeap;
 
@@ -31,6 +31,8 @@ namespace NativeBVH {
 				initialCapacity,
 				allocator,
 				NativeArrayOptions.ClearMemory);
+			
+			rootIndex = new NativeArray<int>(1, allocator);
 
 			// Create invalid node (at index 0)
 			AllocInternalNode();
@@ -44,14 +46,14 @@ namespace NativeBVH {
 			var leafIndex = AllocLeafNode(insertedLeaf);
 			
 			if (nodes->Length == 0) {
-				rootIndex = leafIndex;
+				rootIndex[0] = leafIndex;
 				return leafIndex;
 			}
 			
 			// Stage 1: find the best sibling for the new leaf
-			float bestCost = GetNode(rootIndex)->Box.Union(insertedLeaf).Area();
-			int bestIndex = rootIndex;
-			insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = rootIndex, Cost = 0});
+			float bestCost = GetNode(rootIndex[0])->Box.Union(insertedLeaf).Area();
+			int bestIndex = rootIndex[0];
+			insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = rootIndex[0], Cost = 0});
 
 			while (insertionHeap.Count != 0) {
 				var heapItem = insertionHeap.Pop();
@@ -105,7 +107,7 @@ namespace NativeBVH {
 				GetNode(newParent)->Child2 = leafIndex;
 				GetNode(sibling)->ParentIndex = newParent;
 				GetNode(leafIndex)->ParentIndex = newParent;
-				rootIndex = newParent;
+				rootIndex[0] = newParent;
 			}
 
 			// Stage 3: walk back up the tree refitting AABBs
@@ -148,10 +150,11 @@ namespace NativeBVH {
 			nodes->Dispose();
 			nodes = null;
 			insertionHeap.Dispose();
+			rootIndex.Dispose();
 		}
 
 		public int DebugGetRootNodeIndex() {
-			return rootIndex;
+			return rootIndex.IsCreated ? rootIndex[0] : 0;
 		}
 		
 		public Node DebugGetNode(int index) {

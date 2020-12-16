@@ -16,7 +16,7 @@ namespace NativeBVH {
 			var invD = 1 / ray.Direction;
 			
 			var stack = new UnsafeStack<int>(Allocator.Temp);
-			stack.Push(rootIndex);
+			stack.Push(rootIndex[0]);
 			
 			while (stack.Count > 0) {
 				int index = stack.Pop();
