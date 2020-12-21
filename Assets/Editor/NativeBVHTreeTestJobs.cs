@@ -23,8 +23,8 @@ namespace NativeBVH {
 
 		public void Execute() {
 			for (int i = 0; i < 10000; i++) {
-				Tree.RayCast(Ray, Results);
 				Results.Clear();
+				Tree.RayCast(Ray, Results);
 			}
 		}
 	}

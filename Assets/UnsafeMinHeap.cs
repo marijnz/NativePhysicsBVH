@@ -34,8 +34,7 @@ namespace NativeBVH {
 		}
 
 		public HeapItem Top() {
-			if (Count > 0) return heap[0];
-			return default;
+			return heap[0];
 		}
 
 		public void Clear() {

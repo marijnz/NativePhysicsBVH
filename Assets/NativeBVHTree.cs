@@ -45,7 +45,7 @@ namespace NativeBVH {
 			
 			var leafIndex = AllocLeafNode(insertedLeaf);
 			
-			if (nodes->Length == 0) {
+			if (nodes->Length == 2) {
 				rootIndex[0] = leafIndex;
 				return leafIndex;
 			}

@@ -5,7 +5,7 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace NativeBVH {
 	public unsafe struct UnsafeStack<T> : IDisposable where T : unmanaged {
 		public UnsafeStack(Allocator allocator = Allocator.Temp, int initialCapacity = 512) : this() {
-			stack = new NativeArray<T>(initialCapacity, allocator);
+			stack = new NativeArray<T>(initialCapacity, allocator, NativeArrayOptions.UninitializedMemory);
 		}
 
 		public int Count { get; set; }

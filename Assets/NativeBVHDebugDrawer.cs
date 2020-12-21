@@ -13,14 +13,16 @@ namespace NativeBVH.Editor {
         
         public static NativeBVHTree LastTree;
         public static int[] LastTreeRayHits;
+        public static bool[] LastTreeRayVisited;
 
         private int leafCount = 0;
+        private int maxDepth = 0;
         public static NativeBVHTree.Ray LastRay;
 
         public void OnDrawGizmos() {
             leafCount = 0;
-            Draw(LastTree.DebugGetRootNodeIndex());
-            Handles.Label(Vector3.zero, "Leaf count: " + leafCount);
+            Draw(LastTree.DebugGetRootNodeIndex(), 1);
+            Handles.Label(Vector3.zero, "Leaf count: " + leafCount + " Max depth: " + maxDepth);
 
             if (math.any(LastRay.Direction != float3.zero)) {
                 Gizmos.color = Color.red;
@@ -28,10 +30,11 @@ namespace NativeBVH.Editor {
             }
         }
 
-        private void Draw(int nodeIndex) {
+        private void Draw(int nodeIndex, int depth) {
             if (nodeIndex == NativeBVHTree.InvalidNode) {
                 return;
             }
+            maxDepth = math.max(maxDepth, depth);
             var node = LastTree.DebugGetNode(nodeIndex);
 
             var box = node.Box;
@@ -42,10 +45,13 @@ namespace NativeBVH.Editor {
             var center = box.LowerBound + size / 2;
 
             bool isHit = (LastTreeRayHits != null && LastTreeRayHits.Contains(nodeIndex));
+            bool isVisited = (LastTreeRayVisited != null && LastTreeRayVisited[nodeIndex]);
 
             if ((node.IsLeaf && !HideLeafNodes) || (!node.IsLeaf && !HideInternalNodes)) {
                 if (isHit) {
                     Gizmos.color = Color.red;
+                } else if (isVisited) {
+                    Gizmos.color = Color.yellow;
                 } else {
                     Gizmos.color = node.IsLeaf ? Color.white : Color.green;
                 }
@@ -53,8 +59,8 @@ namespace NativeBVH.Editor {
                 Handles.Label(new Vector3( box.LowerBound.x,  box.LowerBound.y, box.LowerBound.z), nodeIndex.ToString());
             }
             
-            Draw(node.Child1);
-            Draw(node.Child2);
+            Draw(node.Child1, ++depth);
+            Draw(node.Child2, ++depth);
             if (node.IsLeaf) {
                 leafCount++;
             }
