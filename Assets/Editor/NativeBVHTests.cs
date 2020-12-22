@@ -92,7 +92,10 @@ namespace NativeBVH.Editor {
         
         [Test]
         public void TestJobRayRandomManyBoxes() {
-            RunJob(150);
+            // pre-warm
+            RunJob(1);
+            // run
+            RunJob(15000);
         }
 
         private void RunJob(int amount) {

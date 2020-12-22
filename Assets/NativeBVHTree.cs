@@ -51,8 +51,8 @@ namespace NativeBVH {
 			}
 			
 			// Stage 1: find the best sibling for the new leaf
-			float bestCost = GetNode(rootIndex[0])->Box.Union(insertedLeaf).Area();
-			int bestIndex = rootIndex[0];
+			float bestCost = float.MaxValue;
+			int bestIndex = -1;
 			insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = rootIndex[0], Cost = 0});
 
 			while (insertionHeap.Count != 0) {
@@ -73,7 +73,7 @@ namespace NativeBVH {
 
 				var lowerBoundChildrenCost = insertedLeaf.Area() + totalInheritedCost;
 
-				if (lowerBoundChildrenCost < cost) {
+				if (lowerBoundChildrenCost < bestCost) {
 					if (node->Child1 != InvalidNode) {
 						insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = node->Child1, Cost = totalInheritedCost});
 					}
