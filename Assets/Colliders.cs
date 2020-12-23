@@ -103,6 +103,9 @@ namespace NativeBVH {
 			};
 		}
 
+		/// <summary>
+		/// Per: Christer Ericson - Real-Time Collision Detection (p. 179)
+		/// </summary>
 		public bool CastRay(NativeBVHTree.Ray ray) {
 			var m = ray.origin - ray.direction;
 			var c = math.dot(m, m) - radius * radius;
