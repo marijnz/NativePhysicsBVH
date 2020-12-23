@@ -3,9 +3,11 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace NativeBVH {
+
 	public struct Node {
 		public AABB3D Box;
-		//public int ObjectIndex; // TODO
+		public Collider Collider;
+		public int Layer;
 		public int ParentIndex;
 		public int Child1;
 		public int Child2;
@@ -40,10 +42,11 @@ namespace NativeBVH {
 			insertionHeap = new UnsafeMinHeap(initialCapacity, allocator);
 		}
 
-		public int InsertLeaf(AABB3D insertedLeaf) {
+		public int InsertLeaf(Collider collider) {
 			insertionHeap.Clear();
 			
-			var leafIndex = AllocLeafNode(insertedLeaf);
+			var leafIndex = AllocLeafNode(collider);
+			var bounds = GetNode(leafIndex)->Box;
 			
 			if (nodes->Length == 2) {
 				rootIndex[0] = leafIndex;
@@ -59,7 +62,7 @@ namespace NativeBVH {
 				var heapItem = insertionHeap.Pop();
 				var node = GetNode(heapItem.Id);
 
-				var union = node->Box.Union(insertedLeaf);
+				var union = node->Box.Union(bounds);
 				var directCost = union.Area();
 				var cost = directCost + heapItem.Cost;
 
@@ -71,7 +74,7 @@ namespace NativeBVH {
 				var extraInheritedCost = union.Area() - node->Box.Area();
 				var totalInheritedCost = heapItem.Cost + extraInheritedCost;
 
-				var lowerBoundChildrenCost = insertedLeaf.Area() + totalInheritedCost;
+				var lowerBoundChildrenCost = bounds.Area() + totalInheritedCost;
 
 				if (lowerBoundChildrenCost < bestCost) {
 					if (node->Child1 != InvalidNode) {
@@ -89,7 +92,7 @@ namespace NativeBVH {
 			int oldParent = GetNode(sibling)->ParentIndex;
 			int newParent = AllocInternalNode();
 			GetNode(newParent)->ParentIndex = oldParent;
-			GetNode(newParent)->Box = insertedLeaf.Union(GetNode(sibling)->Box);
+			GetNode(newParent)->Box = bounds.Union(GetNode(sibling)->Box);
 			if (oldParent != InvalidNode) {
 				// The sibling was not the root
 				if (GetNode(oldParent)->Child1 == sibling) {
@@ -127,10 +130,14 @@ namespace NativeBVH {
 		
 		private Node* GetNode(int index) => (Node*) ((long) nodes->Ptr + (long) index * sizeof (Node));
 
-		private int AllocLeafNode(AABB3D box) {
+		private int AllocLeafNode(Collider collider) {
 			var id = nodes->Length;
+			var box = collider.CalculateBounds();
+			// Expand a bit for some room for movement without an update. TODO: proper implementation
+			box.Expand(0.2f); 
 			var node = new Node {
 				Box = box,
+				Collider = collider,
 				IsLeaf = true
 			};
 			nodes->Add(node);

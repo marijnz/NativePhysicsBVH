@@ -6,7 +6,7 @@ namespace NativeBVH {
 	[BurstCompile]
 	public struct AddLeavesJob : IJob {
 		public NativeBVHTree Tree;
-		[ReadOnly] public NativeArray<AABB3D> Leaves;
+		[ReadOnly] public NativeArray<Collider> Leaves;
 
 		public void Execute() {
 			for (var i = 0; i < Leaves.Length; i++) {

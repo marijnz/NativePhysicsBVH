@@ -10,6 +10,7 @@ namespace NativeBVH.Editor {
     public class NativeBVHDebugDrawer : MonoBehaviour {
         public bool HideInternalNodes;
         public bool HideLeafNodes;
+        public bool HideColliderPrimitives = true;
         
         public static NativeBVHTree LastTree;
         public static int[] LastTreeRayHits;
@@ -24,9 +25,9 @@ namespace NativeBVH.Editor {
             Draw(LastTree.DebugGetRootNodeIndex(), 1);
             Handles.Label(Vector3.zero, "Leaf count: " + leafCount + " Max depth: " + maxDepth);
 
-            if (math.any(LastRay.Direction != float3.zero)) {
+            if (math.any(LastRay.direction != float3.zero)) {
                 Gizmos.color = Color.red;
-                Gizmos.DrawLine(LastRay.Origin, LastRay.Origin + math.normalize(LastRay.Direction) * LastRay.MaxDistance);
+                Gizmos.DrawLine(LastRay.origin, LastRay.origin + math.normalize(LastRay.direction) * LastRay.maxDistance);
             }
         }
 
@@ -57,6 +58,10 @@ namespace NativeBVH.Editor {
                 }
                 Gizmos.DrawWireCube(new Vector3(center.x, center.y, center.z), new Vector3(size.x, size.y, size.z));
                 Handles.Label(new Vector3( box.LowerBound.x,  box.LowerBound.y, box.LowerBound.z), nodeIndex.ToString());
+            }
+
+            if (!HideColliderPrimitives && node.IsLeaf) {
+                node.Collider.DebugDraw();
             }
             
             Draw(node.Child1, ++depth);

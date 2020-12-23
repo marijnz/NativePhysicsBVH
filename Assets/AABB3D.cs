@@ -19,6 +19,11 @@ namespace NativeBVH {
 			};
 		}
 		
+		public void Expand(float amount) {
+			LowerBound -= amount;
+			UpperBound += amount;
+		}
+		
 		public float Area() {
 			var d = UpperBound - LowerBound;
 			return 2.0f * (d.x * d.y + d.y * d.z + d.z * d.x);
