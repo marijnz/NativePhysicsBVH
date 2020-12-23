@@ -88,6 +88,32 @@ namespace NativeBVH.Editor {
         }
         
         [Test]
+        public void TestRayThreeBoxesWithDeletion() {
+            // Insertion
+            var tree = new NativeBVHTree(64, Allocator.Persistent);
+            var index = tree.InsertLeaf(BoxCollider.Create(new float3(1, 1, 1), new float3(1, 1, 2)));
+            tree.InsertLeaf(BoxCollider.Create(new float3(4, 4, 4), new float3(3, 3, 3)));
+            tree.InsertLeaf(BoxCollider.Create(new float3(8, 3, 4), new float3(2, 2, 2)));
+            tree.RemoveLeaf(index);
+            tree.InsertLeaf(BoxCollider.Create(new float3(1, 1, 1), new float3(1, 2, 2)));
+            
+            // Raycast
+            var rayResult = new NativeList<int>(64, Allocator.Temp);
+            var ray = new NativeBVHTree.Ray {
+                origin = new float3(-1, 1, 0),
+                direction = new float3(10, 0, 10),
+                minDistance = 0,
+                maxDistance = 20
+            };
+            tree.RayCast(ray, rayResult);
+            
+            // Debug
+            NativeBVHDebugDrawer.LastTree = tree;
+            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastRay = ray;
+        }
+        
+        [Test]
         public void TestRayRandomManyBoxes() {
             // Insertion
             var tree = new NativeBVHTree(64, Allocator.Persistent);
@@ -168,7 +194,7 @@ namespace NativeBVH.Editor {
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
             NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
-            NativeBVHDebugDrawer.LastTreeRayVisited  = new bool[amount*2];
+            NativeBVHDebugDrawer.LastTreeRayVisited  = new bool[tree.DebugGetTotalNodesLength()];
             foreach (var i in rayVisited) {
                 NativeBVHDebugDrawer.LastTreeRayVisited[i] = true;
             }
