@@ -1,0 +1,25 @@
+{
+    "name": "NativeBVH-Editor",
+    "references": [
+        "GUID:8a2eafa29b15f444eb6d74f94a930e1d",
+        "GUID:2665a8d13d1b3f18800f46e256720795",
+        "GUID:d8b63aba1907145bea998dd612889d6b",
+        "GUID:27619889b8ba8c24980f49ee34dbb44a",
+        "GUID:e0cd26848372d4e5c891c569017e11f1",
+        "GUID:0acc523941302664db1f4e527237feb3",
+        "GUID:e9845740ed4c6bd44bc2d06a8b7abecd"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

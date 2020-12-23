@@ -47,7 +47,7 @@ namespace NativeBVH {
 
         public int Add<T>(T element) where T : unmanaged {
             if (emptyIndices->Length <= 0) {
-                Resize<T>(math.max(emptyIndices->Length * 2, 2));
+                Resize<T>(math.max(length * 2, 2));
             }
 
             var index = UnsafeUtility.ReadArrayElement<int>(emptyIndices->Ptr, emptyIndices->Length-1);
@@ -78,9 +78,12 @@ namespace NativeBVH {
             if (length > 0) {
                 var bytesToCopy = newLength *  UnsafeUtility.SizeOf<T>();
                 UnsafeUtility.MemCpy(newPointer, ptr, bytesToCopy);
-            }
 
-            AllocatorManager.Free(allocator, ptr);
+                if (allocator == Allocator.Invalid || ptr == null) {
+                    throw new InvalidOperationException();
+                }
+                AllocatorManager.Free(allocator, ptr);
+            }
 
             for (int i = newLength - 1; i >= length; i--) {
                 emptyIndices->Add(i);

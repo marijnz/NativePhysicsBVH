@@ -14,6 +14,18 @@ namespace NativeBVH {
 			}
 		}
 	}
+	
+	[BurstCompile]
+	public struct RemoveLeavesJob : IJob {
+		public NativeBVHTree Tree;
+		[ReadOnly] public NativeArray<int> Leaves;
+
+		public void Execute() {
+			for (var i = 0; i < Leaves.Length; i++) {
+				Tree.RemoveLeaf(Leaves[i]);
+			}
+		}
+	}
 
 	[BurstCompile]
 	public struct RaycastJob : IJob {

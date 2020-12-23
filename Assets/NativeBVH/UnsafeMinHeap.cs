@@ -21,6 +21,9 @@ namespace NativeBVH {
 		private NativeArray<HeapItem> heap;
 		
 		public void Push(HeapItem v) {
+			if (Count >= heap.Length-1) {
+				throw new InvalidOperationException();
+			}
 			// Usually this would be the place so increase size of heap if needed, but it's pre-allocated.
 			heap[Count] = v;
 			SiftUp(Count++);
