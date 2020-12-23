@@ -48,14 +48,15 @@ namespace NativeBVH.Editor {
             bool isHit = (LastTreeRayHits != null && LastTreeRayHits.Contains(nodeIndex));
             bool isVisited = (LastTreeRayVisited != null && LastTreeRayVisited[nodeIndex]);
 
+            if (isHit) {
+                Gizmos.color = Color.red;
+            } else if (isVisited) {
+                Gizmos.color = Color.yellow;
+            } else {
+                Gizmos.color = node.isLeaf ? Color.white : Color.green;
+            }
+            
             if ((node.isLeaf && !HideLeafNodes) || (!node.isLeaf && !HideInternalNodes)) {
-                if (isHit) {
-                    Gizmos.color = Color.red;
-                } else if (isVisited) {
-                    Gizmos.color = Color.yellow;
-                } else {
-                    Gizmos.color = node.isLeaf ? Color.white : Color.green;
-                }
                 Gizmos.DrawWireCube(new Vector3(center.x, center.y, center.z), new Vector3(size.x, size.y, size.z));
                 Handles.Label(new Vector3( box.LowerBound.x,  box.LowerBound.y, box.LowerBound.z), nodeIndex.ToString());
             }
