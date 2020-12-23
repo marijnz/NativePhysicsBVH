@@ -21,17 +21,17 @@ namespace NativeBVH {
                 var index = stack[--top];
                 var node = GetNode(index);
 
-                if (!IntersectionUtils.Overlap(node->Box.LowerBound, node->Box.UpperBound, ref ray, invD)) {
+                if (!IntersectionUtils.Overlap(node->box.LowerBound, node->box.UpperBound, ref ray, invD)) {
                     continue;
                 }
                 
-                if (node->IsLeaf) {
-                    if (node->Collider.CastRay(ray)) {
+                if (node->isLeaf) {
+                    if (node->collider.CastRay(ray)) {
                         results.Add(index);
                     }
                 } else {
-                    stack[top++] = node->Child1;
-                    stack[top++] = node->Child2;
+                    stack[top++] = node->child1;
+                    stack[top++] = node->child2;
                 }
             }
         }

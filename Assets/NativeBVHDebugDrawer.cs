@@ -38,9 +38,9 @@ namespace NativeBVH.Editor {
             maxDepth = math.max(maxDepth, depth);
             var node = LastTree.DebugGetNode(nodeIndex);
 
-            var box = node.Box;
-            box.LowerBound -= node.IsLeaf ? 0 : 0.2f;
-            box.UpperBound += node.IsLeaf ? 0 : 0.2f;
+            var box = node.box;
+            box.LowerBound -= node.isLeaf ? 0 : 0.2f;
+            box.UpperBound += node.isLeaf ? 0 : 0.2f;
 
             var size = (box.UpperBound - box.LowerBound);
             var center = box.LowerBound + size / 2;
@@ -48,25 +48,25 @@ namespace NativeBVH.Editor {
             bool isHit = (LastTreeRayHits != null && LastTreeRayHits.Contains(nodeIndex));
             bool isVisited = (LastTreeRayVisited != null && LastTreeRayVisited[nodeIndex]);
 
-            if ((node.IsLeaf && !HideLeafNodes) || (!node.IsLeaf && !HideInternalNodes)) {
+            if ((node.isLeaf && !HideLeafNodes) || (!node.isLeaf && !HideInternalNodes)) {
                 if (isHit) {
                     Gizmos.color = Color.red;
                 } else if (isVisited) {
                     Gizmos.color = Color.yellow;
                 } else {
-                    Gizmos.color = node.IsLeaf ? Color.white : Color.green;
+                    Gizmos.color = node.isLeaf ? Color.white : Color.green;
                 }
                 Gizmos.DrawWireCube(new Vector3(center.x, center.y, center.z), new Vector3(size.x, size.y, size.z));
                 Handles.Label(new Vector3( box.LowerBound.x,  box.LowerBound.y, box.LowerBound.z), nodeIndex.ToString());
             }
 
-            if (!HideColliderPrimitives && node.IsLeaf) {
-                node.Collider.DebugDraw();
+            if (!HideColliderPrimitives && node.isLeaf) {
+                node.collider.DebugDraw();
             }
             
-            Draw(node.Child1, ++depth);
-            Draw(node.Child2, ++depth);
-            if (node.IsLeaf) {
+            Draw(node.child1, ++depth);
+            Draw(node.child2, ++depth);
+            if (node.isLeaf) {
                 leafCount++;
             }
         }

@@ -5,13 +5,13 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace NativeBVH {
 
 	public struct Node {
-		public AABB3D Box;
-		public Collider Collider;
-		public int Layer;
-		public int ParentIndex;
-		public int Child1;
-		public int Child2;
-		public bool IsLeaf;
+		public AABB3D box;
+		public Collider collider;
+		public int layer; // TODO
+		public int parentIndex;
+		public int child1;
+		public int child2;
+		public bool isLeaf;
 	}
 
 	/// <summary>
@@ -46,7 +46,7 @@ namespace NativeBVH {
 			insertionHeap.Clear();
 			
 			var leafIndex = AllocLeafNode(collider);
-			var bounds = GetNode(leafIndex)->Box;
+			var bounds = GetNode(leafIndex)->box;
 			
 			if (nodes->Length == 2) {
 				rootIndex[0] = leafIndex;
@@ -62,7 +62,7 @@ namespace NativeBVH {
 				var heapItem = insertionHeap.Pop();
 				var node = GetNode(heapItem.Id);
 
-				var union = node->Box.Union(bounds);
+				var union = node->box.Union(bounds);
 				var directCost = union.Area();
 				var cost = directCost + heapItem.Cost;
 
@@ -71,17 +71,17 @@ namespace NativeBVH {
 					bestIndex = heapItem.Id;
 				}
 
-				var extraInheritedCost = union.Area() - node->Box.Area();
+				var extraInheritedCost = union.Area() - node->box.Area();
 				var totalInheritedCost = heapItem.Cost + extraInheritedCost;
 
 				var lowerBoundChildrenCost = bounds.Area() + totalInheritedCost;
 
 				if (lowerBoundChildrenCost < bestCost) {
-					if (node->Child1 != InvalidNode) {
-						insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = node->Child1, Cost = totalInheritedCost});
+					if (node->child1 != InvalidNode) {
+						insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = node->child1, Cost = totalInheritedCost});
 					}
-					if (node->Child2 != InvalidNode) {
-						insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = node->Child2, Cost = totalInheritedCost});
+					if (node->child2 != InvalidNode) {
+						insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = node->child2, Cost = totalInheritedCost});
 					}
 				}
 			}
@@ -89,40 +89,40 @@ namespace NativeBVH {
 			var sibling = bestIndex;
 			
 			// Stage 2: create a new parent
-			int oldParent = GetNode(sibling)->ParentIndex;
+			int oldParent = GetNode(sibling)->parentIndex;
 			int newParent = AllocInternalNode();
-			GetNode(newParent)->ParentIndex = oldParent;
-			GetNode(newParent)->Box = bounds.Union(GetNode(sibling)->Box);
+			GetNode(newParent)->parentIndex = oldParent;
+			GetNode(newParent)->box = bounds.Union(GetNode(sibling)->box);
 			if (oldParent != InvalidNode) {
 				// The sibling was not the root
-				if (GetNode(oldParent)->Child1 == sibling) {
-					GetNode(oldParent)->Child1 = newParent;
+				if (GetNode(oldParent)->child1 == sibling) {
+					GetNode(oldParent)->child1 = newParent;
 				} else {
-					GetNode(oldParent)->Child2 = newParent;
+					GetNode(oldParent)->child2 = newParent;
 				}
-				GetNode(newParent)->Child1 = sibling;
-				GetNode(newParent)->Child2 = leafIndex;
-				GetNode(sibling)->ParentIndex = newParent;
-				GetNode(leafIndex)->ParentIndex = newParent;
+				GetNode(newParent)->child1 = sibling;
+				GetNode(newParent)->child2 = leafIndex;
+				GetNode(sibling)->parentIndex = newParent;
+				GetNode(leafIndex)->parentIndex = newParent;
 			} else { 
 				// The sibling was the root
-				GetNode(newParent)->Child1 = sibling;
-				GetNode(newParent)->Child2 = leafIndex;
-				GetNode(sibling)->ParentIndex = newParent;
-				GetNode(leafIndex)->ParentIndex = newParent;
+				GetNode(newParent)->child1 = sibling;
+				GetNode(newParent)->child2 = leafIndex;
+				GetNode(sibling)->parentIndex = newParent;
+				GetNode(leafIndex)->parentIndex = newParent;
 				rootIndex[0] = newParent;
 			}
 
 			// Stage 3: walk back up the tree refitting AABBs
-			int index = GetNode(leafIndex)->ParentIndex;
+			int index = GetNode(leafIndex)->parentIndex;
 			while (index != InvalidNode) {
-				int child1 = GetNode(index)->Child1;
-				int child2 = GetNode(index)->Child2;
-				GetNode(index)->Box = GetNode(child1)->Box.Union(GetNode(child2)->Box);
+				int child1 = GetNode(index)->child1;
+				int child2 = GetNode(index)->child2;
+				GetNode(index)->box = GetNode(child1)->box.Union(GetNode(child2)->box);
 				
 				//TODO: Rotations
 				
-				index = GetNode(index)->ParentIndex;
+				index = GetNode(index)->parentIndex;
 			}
 
 			return leafIndex;
@@ -136,9 +136,9 @@ namespace NativeBVH {
 			// Expand a bit for some room for movement without an update. TODO: proper implementation
 			box.Expand(0.2f); 
 			var node = new Node {
-				Box = box,
-				Collider = collider,
-				IsLeaf = true
+				box = box,
+				collider = collider,
+				isLeaf = true
 			};
 			nodes->Add(node);
 			return id;
@@ -147,7 +147,7 @@ namespace NativeBVH {
 		private int AllocInternalNode() {
 			var id = nodes->Length;
 			var node = new Node {
-				IsLeaf = false
+				isLeaf = false
 			};
 			nodes->Add(node);
 			return id;
