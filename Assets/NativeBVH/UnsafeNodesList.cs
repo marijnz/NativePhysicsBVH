@@ -19,7 +19,7 @@ namespace NativeBVH {
         
         private Allocator allocator;
         
-        public static UnsafeNodesList* Create<T>(int length, Allocator allocator) where T : unmanaged {
+        public static UnsafeNodesList* Create<T>(int length, Allocator allocator, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory) where T : unmanaged {
             var handle = new AllocatorManager.AllocatorHandle { Value = (int)allocator };
             UnsafeNodesList* listData = AllocatorManager.Allocate<UnsafeNodesList>(handle);
             UnsafeUtility.MemClear(listData, UnsafeUtility.SizeOf<UnsafeList>());
@@ -30,7 +30,11 @@ namespace NativeBVH {
             if (length != 0) {
                 listData->Resize<T>(length);
             }
-            
+
+            if (options == NativeArrayOptions.ClearMemory && listData->ptr != null) {
+                UnsafeUtility.MemClear(listData->ptr, listData->length * UnsafeUtility.SizeOf<int>());
+            }
+
             return listData;
         }
 
@@ -42,7 +46,7 @@ namespace NativeBVH {
 
         public void RemoveAt<T>(int index) where T : unmanaged {
             emptyIndices->Add(index);
-            UnsafeUtility.WriteArrayElement(emptyIndices->Ptr, index, default(T));
+            UnsafeUtility.WriteArrayElement(ptr, index, default(T));
         }
 
         public int Add<T>(T element) where T : unmanaged {
@@ -54,7 +58,7 @@ namespace NativeBVH {
             emptyIndices->RemoveAt<int>(emptyIndices->Length - 1);
             
             UnsafeUtility.WriteArrayElement(ptr, index, element);
-
+  
             return index;
         }
         
@@ -73,17 +77,19 @@ namespace NativeBVH {
         }
         
         private void Resize<T>(int newLength) where T : unmanaged{
-            var newPointer = AllocatorManager.Allocate(allocator, UnsafeUtility.SizeOf<T>(),  UnsafeUtility.AlignOf<T>(), newLength);
+            void* newPointer = null;
 
-            if (length > 0) {
-                var bytesToCopy = newLength *  UnsafeUtility.SizeOf<T>();
-                UnsafeUtility.MemCpy(newPointer, ptr, bytesToCopy);
+            if (newLength > 0) {
+                newPointer = AllocatorManager.Allocate(allocator, UnsafeUtility.SizeOf<T>(),  UnsafeUtility.AlignOf<T>(), newLength);
 
-                if (allocator == Allocator.Invalid || ptr == null) {
-                    throw new InvalidOperationException();
+                if (length > 0) {
+                    var itemsToCopy = math.min(length, newLength);
+                    var bytesToCopy = itemsToCopy * UnsafeUtility.SizeOf<T>();
+                    UnsafeUtility.MemCpy(newPointer, ptr, bytesToCopy);
                 }
-                AllocatorManager.Free(allocator, ptr);
             }
+
+            AllocatorManager.Free(allocator, ptr);
 
             for (int i = newLength - 1; i >= length; i--) {
                 emptyIndices->Add(i);

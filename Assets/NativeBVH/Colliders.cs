@@ -107,7 +107,7 @@ namespace NativeBVH {
 		/// Per: Christer Ericson - Real-Time Collision Detection (p. 179)
 		/// </summary>
 		public bool CastRay(NativeBVHTree.Ray ray) {
-			var m = ray.origin - ray.direction;
+			var m = ray.origin - center;
 			var c = math.dot(m, m) - radius * radius;
 			// If there is definitely at least one real root, there must be an intersection
 			if (c <= 0.0f) {
