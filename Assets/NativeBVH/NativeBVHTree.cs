@@ -32,7 +32,7 @@ namespace NativeBVH {
 		private UnsafeMinHeap insertionHeap;
 
 		public NativeBVHTree(int initialCapacity = 64, Allocator allocator = Allocator.Temp) : this() {
-			nodes = UnsafeNodesList.Create<Node>(initialCapacity,allocator);
+			nodes = UnsafeNodesList.Create<Node>(initialCapacity, allocator, NativeArrayOptions.ClearMemory);
 			
 			rootIndex = new NativeArray<int>(1, allocator);
 
@@ -142,15 +142,18 @@ namespace NativeBVH {
 					GetNode(siblingIndex)->parentIndex = InvalidNode;
 					rootIndex[0] = siblingIndex;
 				}
-				RefitParents(siblingIndex);
+
+				if (!GetNode(node->parentIndex)->isLeaf) {
+					RefitParents(node->parentIndex);
+				}
 			} else {
 				rootIndex[0] = InvalidNode;
 			}
 			
-			DeallocNode(index);
 			if (node->parentIndex != InvalidNode) {
 				DeallocNode(node->parentIndex);
 			}
+			DeallocNode(index);
 		}
 
 		private void RefitParents(int index) {
@@ -170,7 +173,7 @@ namespace NativeBVH {
 		private int AllocLeafNode(Collider collider) {
 			var box = collider.CalculateBounds();
 			// Expand a bit for some room for movement without an update. TODO: proper implementation
-			box.Expand(0.2f); 
+			//box.Expand(0.2f); 
 			var node = new Node {
 				box = box,
 				collider = collider,
