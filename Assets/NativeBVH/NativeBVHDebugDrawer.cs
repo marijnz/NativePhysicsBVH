@@ -10,8 +10,13 @@ namespace NativeBVH.Editor {
     public class NativeBVHDebugDrawer : MonoBehaviour {
         public bool HideInternalNodes;
         public bool HideLeafNodes;
-        public bool HideColliderPrimitives = true;
+        public bool HideColliderPrimitives;
+        public bool ShowHitsOnly;
         
+        // Limit to node & parent traversal
+        public int LimitToId;
+        public int ParentDepth = 1;
+
         public static NativeBVHTree LastTree;
         public static int[] LastTreeRayHits;
         public static bool[] LastTreeRayVisited;
@@ -31,7 +36,7 @@ namespace NativeBVH.Editor {
             }
         }
 
-        private void Draw(int nodeIndex, int depth) {
+        private void Draw(int nodeIndex, int depth, bool drawingUpwards = false) {
             if (nodeIndex == NativeBVHTree.InvalidNode) {
                 return;
             }
@@ -55,18 +60,34 @@ namespace NativeBVH.Editor {
             } else {
                 Gizmos.color = node.isLeaf ? Color.white : Color.green;
             }
-            
-            if ((node.isLeaf && !HideLeafNodes) || (!node.isLeaf && !HideInternalNodes)) {
-                Gizmos.DrawWireCube(new Vector3(center.x, center.y, center.z), new Vector3(size.x, size.y, size.z));
-                Handles.Label(new Vector3( box.LowerBound.x,  box.LowerBound.y, box.LowerBound.z), nodeIndex.ToString());
+
+            if (drawingUpwards || ((!ShowHitsOnly || isHit) && (LimitToId == 0 || LimitToId == nodeIndex))) {
+                if ((node.isLeaf && !HideLeafNodes) || (!node.isLeaf && !HideInternalNodes)) {
+                    Gizmos.DrawWireCube(new Vector3(center.x, center.y, center.z), new Vector3(size.x, size.y, size.z));
+                    Handles.Label(new Vector3( box.LowerBound.x,  box.LowerBound.y, box.LowerBound.z), nodeIndex.ToString());
+                }
+
+                if (!HideColliderPrimitives && node.isLeaf) {
+                    node.collider.DebugDraw();
+                }
+
+                if (LimitToId == nodeIndex) {
+                    // Draw parents
+                    int count = 0;
+                    var parent = node.parentIndex;
+                    while (count++ < ParentDepth && parent != NativeBVHTree.InvalidNode) {
+                        var parentNode = LastTree.DebugGetNode(parent);
+                        Draw(parent, depth, true);
+                        parent = parentNode.parentIndex;
+                    }
+                }
             }
 
-            if (!HideColliderPrimitives && node.isLeaf) {
-                node.collider.DebugDraw();
+            if (!drawingUpwards) {
+                Draw(node.child1, ++depth);
+                Draw(node.child2, ++depth);
             }
-            
-            Draw(node.child1, ++depth);
-            Draw(node.child2, ++depth);
+          
             if (node.isLeaf) {
                 leafCount++;
             }

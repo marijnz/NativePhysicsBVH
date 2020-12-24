@@ -9,33 +9,74 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.TestTools;
 using Debug = UnityEngine.Debug;
+using Random = UnityEngine.Random;
 
 namespace NativeBVH {
     public class NativeBVHIntegrationTests {
         
         [UnityTest]
         public IEnumerator Test() {
-            var go = new GameObject("test");
+            Random.InitState(0);
+            var go = new GameObject("debug");
             go.AddComponent<NativeBVHDebugDrawer>();
             var world = new BVHTreeDynamicWorld(5000, Allocator.Persistent);
             
             NativeBVHDebugDrawer.LastTree = world.tree;
 
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 500; i++) {
                 var center = new float3(UnityEngine.Random.Range(0, 300), UnityEngine.Random.Range(0, 300),  UnityEngine.Random.Range(0, 300));
-                var size = new float3(UnityEngine.Random.Range(5, 10), UnityEngine.Random.Range(5, 10), UnityEngine.Random.Range(5, 10));
+                var size = new float3(UnityEngine.Random.Range(10, 15), UnityEngine.Random.Range(10, 15), UnityEngine.Random.Range(10, 15));
                 world.Add(BoxCollider.Create(center, size));
+            }
+            
+            for (int i = 0; i < 500; i++) {
+                var center = new float3(UnityEngine.Random.Range(0, 300), UnityEngine.Random.Range(0, 300),  UnityEngine.Random.Range(0, 300));
+                world.Add(SphereCollider.Create(center, UnityEngine.Random.Range(10, 15)));
             }
 
             var until = Time.time + 30;
 
-            //while (Time.time < until) {
+            // Prep raycast
+            var rayResult = new NativeList<int>(64, Allocator.TempJob);
+            var rayVisited = new NativeList<int>(64, Allocator.TempJob);
+            var ray = new NativeBVHTree.Ray {
+                origin = new float3(-30, -30, 0),
+                direction = math.normalize(new float3(5, 5, 5)),
+                minDistance = 0,
+                maxDistance = 500
+            };
+            // Job
+            var job = new RaycastJob {
+                Tree = world.tree,
+                Ray = ray,
+                Results = rayResult,
+            };
+            
+            
+            while (Time.time < until) {
+                // Update
                 Profiler.BeginSample("World.Update");
-                world.Update();
+                new BVHTreeDynamicWorld.UpdateJob {World = world}.Run();
+                Profiler.EndSample();
+                Profiler.BeginSample("Raycast");
+                job.Run();
                 Profiler.EndSample();
                 yield return null;
-           // }
-           yield break;
+                
+                // Assertion
+                if (rayResult.Length != 9) {
+                    Debug.LogError("Expected 9 hits");
+                }
+                
+                // Debug
+                NativeBVHDebugDrawer.LastTree = world.tree;
+                NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+                NativeBVHDebugDrawer.LastTreeRayVisited = new bool[world.tree.DebugGetTotalNodesLength()+1];
+                foreach (var i in rayVisited) {
+                    NativeBVHDebugDrawer.LastTreeRayVisited[i] = true;
+                }
+                NativeBVHDebugDrawer.LastRay = ray;
+            }
         }
         
          private void RunJob(int amount) {
@@ -66,7 +107,7 @@ namespace NativeBVH {
             var rayResult = new NativeList<int>(64, Allocator.TempJob);
             var rayVisited = new NativeList<int>(64, Allocator.TempJob);
             var ray = new NativeBVHTree.Ray {
-                origin = new float3(-10, -10, 0),
+                origin = new float3(-30, -30, -30),
                 direction = math.normalize(new float3(5, 5, 5)),
                 minDistance = 0,
                 maxDistance = 500

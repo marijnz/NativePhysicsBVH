@@ -22,7 +22,7 @@ namespace NativeBVH {
         public static UnsafeNodesList* Create<T>(int length, Allocator allocator, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory) where T : unmanaged {
             var handle = new AllocatorManager.AllocatorHandle { Value = (int)allocator };
             UnsafeNodesList* listData = AllocatorManager.Allocate<UnsafeNodesList>(handle);
-            UnsafeUtility.MemClear(listData, UnsafeUtility.SizeOf<UnsafeList>());
+            UnsafeUtility.MemClear(listData, UnsafeUtility.SizeOf<UnsafeNodesList>());
 
             listData->allocator = allocator;
             listData->emptyIndices = UnsafeList.Create(UnsafeUtility.SizeOf<int>(), UnsafeUtility.AlignOf<int>(), length, allocator);
