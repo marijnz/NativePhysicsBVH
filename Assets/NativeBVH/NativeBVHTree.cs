@@ -7,7 +7,7 @@ namespace NativeBVH {
 	public struct Node {
 		public AABB3D box;
 		public Collider collider;
-		public int layer; // TODO
+		public uint layer;
 		public int parentIndex;
 		public int child1;
 		public int child2;
@@ -42,10 +42,10 @@ namespace NativeBVH {
 			insertionHeap = new UnsafeMinHeap(initialCapacity, allocator);
 		}
 
-		public int InsertLeaf(Collider collider) {
+		public int InsertLeaf(Collider collider, uint layer = 0xffffffff) {
 			insertionHeap.Clear();
 			
-			var leafIndex = AllocLeafNode(collider);
+			var leafIndex = AllocLeafNode(collider, layer);
 			var bounds = GetNode(leafIndex)->box;
 			
 			if (nodes->length == 2) {
@@ -170,14 +170,15 @@ namespace NativeBVH {
 
 		private Node* GetNode(int index) => nodes->Get<Node>(index);
 
-		private int AllocLeafNode(Collider collider) {
+		private int AllocLeafNode(Collider collider, uint layer) {
 			var box = collider.CalculateBounds();
 			// Expand a bit for some room for movement without an update. TODO: proper implementation
 			//box.Expand(0.2f); 
 			var node = new Node {
 				box = box,
 				collider = collider,
-				isLeaf = true
+				isLeaf = true,
+				layer = layer
 			};
 			var id = nodes->Add<Node>(node);
 			return id;

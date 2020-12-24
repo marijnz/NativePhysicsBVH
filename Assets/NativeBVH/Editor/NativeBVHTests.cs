@@ -58,6 +58,9 @@ namespace NativeBVH.Editor {
             };
             tree.RayCast(ray, rayResult);
             
+            // Assert
+            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
+            
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
             NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
@@ -69,7 +72,7 @@ namespace NativeBVH.Editor {
             // Insertion
             var tree = new NativeBVHTree(64, Allocator.Persistent);
             tree.InsertLeaf(SphereCollider.Create(new float3(1, 1, 1), 1));
-            tree.InsertLeaf(SphereCollider.Create(new float3(4, 4, 4), 2));
+            tree.InsertLeaf(SphereCollider.Create(new float3(4, 3, 6), 2.1f));
             
             // Raycast
             var rayResult = new NativeList<int>(64, Allocator.Temp);
@@ -80,11 +83,14 @@ namespace NativeBVH.Editor {
                 maxDistance = 20
             };
             tree.RayCast(ray, rayResult);
-            
+
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
             NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
+            
+            // Assert
+            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
         }
         
         [Test]
@@ -111,6 +117,9 @@ namespace NativeBVH.Editor {
             NativeBVHDebugDrawer.LastTree = tree;
             NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
+            
+            // Assert
+            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
         }
         
         [Test]
@@ -140,11 +149,41 @@ namespace NativeBVH.Editor {
         }
         
         [Test]
+        public void TestRayTwoBoxesWithLayers() {
+            // Insertion
+            var tree = new NativeBVHTree(64, Allocator.Persistent);
+
+            uint layer1 = 1;
+            uint layer2 = 1 << 1;
+            tree.InsertLeaf(BoxCollider.Create(new float3(1, 1, 1), new float3(3, 3, 3)), layer1);
+            tree.InsertLeaf(BoxCollider.Create(new float3(5, 1, 5), new float3(3, 3, 3)), layer2);
+            
+            // Raycast
+            var rayResult = new NativeList<int>(64, Allocator.Temp);
+            var ray = new NativeBVHTree.Ray {
+                origin = new float3(-1, 1, 0),
+                direction = new float3(10, 0, 10),
+                minDistance = 0,
+                maxDistance = 20,
+                layerMask = ~layer1
+            };
+            tree.RayCast(ray, rayResult);
+
+            // Debug
+            NativeBVHDebugDrawer.LastTree = tree;
+            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastRay = ray;
+            
+            // Assert
+            Assert.AreEqual(1, rayResult.Length, "Expected only one hit because of layer mask");
+        }
+        
+        [Test]
         public void TestJobRayRandomManyBoxesAndSpheres() {
             // pre-warm
             RunJob(1);
             // run
-            RunJob(1500);
+            RunJob(15000);
         }
 
         private void RunJob(int amount) {
