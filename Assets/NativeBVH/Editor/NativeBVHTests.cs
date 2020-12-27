@@ -183,7 +183,7 @@ namespace NativeBVH.Editor {
             // pre-warm
             RunJob(1);
             // run
-            RunJob(15000);
+            RunJob(1500);
         }
 
         private void RunJob(int amount) {
