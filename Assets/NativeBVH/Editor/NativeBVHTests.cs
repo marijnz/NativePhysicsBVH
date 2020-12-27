@@ -57,14 +57,14 @@ namespace NativeBVH.Editor {
                 maxDistance = 20
             };
             tree.RayCast(ray, rayResult);
-            
-            // Assert
-            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
-            
+
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
             NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
+            
+            // Assert
+            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
         }
         
         [Test]
@@ -183,7 +183,7 @@ namespace NativeBVH.Editor {
             // pre-warm
             RunJob(1);
             // run
-            RunJob(15000);
+            RunJob(1500);
         }
 
         private void RunJob(int amount) {

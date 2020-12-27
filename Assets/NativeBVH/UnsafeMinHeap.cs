@@ -10,7 +10,7 @@ namespace NativeBVH {
 	public unsafe struct UnsafeMinHeap : IDisposable {
 		public struct HeapItem {
 			public int Id;
-			public float Cost;
+			public float InheritedCost;
 		}
 		
 		public UnsafeMinHeap(int initialCapacity = 64, Allocator allocator = Allocator.Temp) : this() {
@@ -61,8 +61,8 @@ namespace NativeBVH {
 		}
 
 		int CompareCost(HeapItem a, HeapItem b) {
-			if(a.Cost < b.Cost) return 1;
-			if(a.Cost > b.Cost) return -1;
+			if(a.InheritedCost < b.InheritedCost) return 1;
+			if(a.InheritedCost > b.InheritedCost) return -1;
 			return 0;
 		}
 
