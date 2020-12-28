@@ -29,10 +29,10 @@ namespace NativeBVH {
 
 	[BurstCompile]
 	public struct RaycastJob : IJob {
-		public NativeBVHTree Tree;
+		[ReadOnly] public NativeBVHTree Tree;
 		[ReadOnly] public NativeBVHTree.Ray Ray;
 		public NativeList<int> Results;
-
+		
 		public void Execute() {
 			for (int i = 0; i < 10000; i++) {
 				Results.Clear();

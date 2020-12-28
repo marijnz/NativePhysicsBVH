@@ -13,28 +13,54 @@ namespace NativeBVH {
         }
 		
         public void RayCast(Ray ray, NativeList<int> results) {
-            var invD = 1 / ray.direction;
             ray.direction = math.normalize(ray.direction);
+            var invD = 1 / ray.direction;
+
+            if (GetNode(rootIndex[0])->isLeaf) {
+                RayLeaf(ref this, rootIndex[0]);
+                return;
+            }
             
             var stack = stackalloc int[256];
             stack[0] = rootIndex[0];
             var top = 1;
-
+            
             while (top > 0) {
                 var index = stack[--top];
                 var node = GetNode(index);
 
-                if (!IntersectionUtils.Overlap(node->box.LowerBound, node->box.UpperBound, ref ray, invD)) {
-                    continue;
+                var child1 = GetNode(node->child1);
+                var child2 = GetNode(node->child2);
+                if (child1->isLeaf) {
+                    RayLeaf(ref this, node->child1);
                 }
+                if (child2->isLeaf) {
+                    RayLeaf(ref this, node->child2);
+                }
+
+                var result = node->grandchildrenAabbs.Raycast(ray, invD);
+
+                ProcessResult(ref this, 0, child1->child1);
+                ProcessResult(ref this, 1, child1->child2);
+                ProcessResult(ref this, 2, child2->child1);
+                ProcessResult(ref this, 3, child2->child2);
                 
-                if (node->isLeaf) {
-                    if ((ray.layerMask & node->layer) == 0 && node->collider.CastRay(ray)) {
-                        results.Add(index);
-                    } 
-                } else {
-                    stack[top++] = node->child1;
-                    stack[top++] = node->child2;
+                void ProcessResult(ref NativeBVHTree tree, int childId,  int id) {
+                    if (result[childId]) {
+                        var child = tree.GetNode(id);
+                        if (child->isLeaf) {
+                            RayLeaf(ref tree, id);
+                        } else {
+                            stack[top++] = id;
+                        }
+                    }
+                }
+            }
+            
+            void RayLeaf(ref NativeBVHTree tree, int id) {
+                var child = tree.GetNode(id);
+                if ((ray.layerMask & child->layer) == 0 && child->collider.CastRay(ray)) {
+                    results.Add(id);
                 }
             }
         }

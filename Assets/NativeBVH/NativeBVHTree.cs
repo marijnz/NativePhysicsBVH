@@ -12,6 +12,7 @@ namespace NativeBVH {
 		public int child1;
 		public int child2;
 		public bool isLeaf;
+		public SimpleFourTransposedAabbs grandchildrenAabbs;
 	}
 
 	/// <summary>
@@ -100,19 +101,16 @@ namespace NativeBVH {
 				} else {
 					GetNode(oldParent)->child2 = newParent;
 				}
-				GetNode(newParent)->child1 = sibling;
-				GetNode(newParent)->child2 = leafIndex;
-				GetNode(sibling)->parentIndex = newParent;
-				GetNode(leafIndex)->parentIndex = newParent;
 			} else { 
 				// The sibling was the root
-				GetNode(newParent)->child1 = sibling;
-				GetNode(newParent)->child2 = leafIndex;
-				GetNode(sibling)->parentIndex = newParent;
-				GetNode(leafIndex)->parentIndex = newParent;
 				rootIndex[0] = newParent;
 			}
 
+			GetNode(newParent)->child1 = sibling;
+			GetNode(newParent)->child2 = leafIndex;
+			GetNode(sibling)->parentIndex = newParent;
+			GetNode(leafIndex)->parentIndex = newParent;
+			
 			// Stage 3: walk back up the tree refitting AABBs
 			RefitParents(GetNode(leafIndex)->parentIndex);
 
@@ -161,6 +159,11 @@ namespace NativeBVH {
 				int child1 = GetNode(index)->child1;
 				int child2 = GetNode(index)->child2;
 				GetNode(index)->box = GetNode(child1)->box.Union(GetNode(child2)->box);
+				
+				GetNode(index)->grandchildrenAabbs.SetAabb(0, GetNode(GetNode(child1)->child1)->box);
+				GetNode(index)->grandchildrenAabbs.SetAabb(1, GetNode(GetNode(child1)->child2)->box);
+				GetNode(index)->grandchildrenAabbs.SetAabb(2, GetNode(GetNode(child2)->child1)->box);
+				GetNode(index)->grandchildrenAabbs.SetAabb(3, GetNode(GetNode(child2)->child2)->box);
 				
 				//TODO: Rotations
 				

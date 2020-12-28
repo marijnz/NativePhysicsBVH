@@ -20,8 +20,10 @@ namespace NativeBVH {
 						return ((BoxCollider*) target->data)->CastRay(ray);
 					case Type.Sphere:
 						return ((SphereCollider*) target->data)->CastRay(ray);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
 					default:
 						throw new ArgumentOutOfRangeException();
+#endif
 				}
 			}
 		}
@@ -33,8 +35,10 @@ namespace NativeBVH {
 						return ((BoxCollider*) target->data)->CalculateBounds();
 					case Type.Sphere:
 						return ((SphereCollider*) target->data)->CalculateBounds();
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
 					default:
 						throw new ArgumentOutOfRangeException();
+#endif
 				}
 			}
 		}
