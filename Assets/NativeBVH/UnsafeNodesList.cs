@@ -61,6 +61,11 @@ namespace NativeBVH {
   
             return index;
         }
+
+        public void ClearAndResize<T>(int newLength) where T : unmanaged {
+            emptyIndices->Clear();
+            Resize<T>(newLength);
+        }
         
         public T* Get<T>(int index) where T : unmanaged {
             return (T*) ((long) ptr + (long) index * sizeof (T));

@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Profiling;
 using Debug = UnityEngine.Debug;
 
 namespace NativeBVH.Editor {
@@ -216,7 +217,7 @@ namespace NativeBVH.Editor {
                 origin = new float3(-10, -10, 0),
                 direction = math.normalize(new float3(5, 5, 5)),
                 minDistance = 0,
-                maxDistance = 500
+                maxDistance = 500,
             };
             
             // Job
@@ -233,10 +234,10 @@ namespace NativeBVH.Editor {
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
             NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
-            NativeBVHDebugDrawer.LastTreeRayVisited  = new bool[tree.DebugGetTotalNodesLength()];
-            foreach (var i in rayVisited) {
-                NativeBVHDebugDrawer.LastTreeRayVisited[i] = true;
-            }
+           // NativeBVHDebugDrawer.LastTreeRayVisited  = new bool[tree.DebugGetTotalNodesLength()];
+            //foreach (var i in rayVisited) {
+            //    NativeBVHDebugDrawer.LastTreeRayVisited[i] = true;
+            //}
             NativeBVHDebugDrawer.LastRay = ray;
         }
         

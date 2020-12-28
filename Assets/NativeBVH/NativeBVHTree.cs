@@ -154,6 +154,60 @@ namespace NativeBVH {
 			DeallocNode(index);
 		}
 
+		public void Linearize() {
+			if (rootIndex[0] == InvalidNode) {
+				return;
+			}
+			
+			var temp = new NativeArray<Node>(nodes->length, Allocator.Temp);
+
+			var length = 1;
+			
+			var stack = stackalloc int[1024];
+			stack[0] = rootIndex[0];
+			var top = 1;
+            
+			while (top > 0) {
+				var index = stack[--top];
+				if (index == InvalidNode) {
+					continue;
+				}
+				var node = GetNode(index);
+				var newIndex = length++;
+
+				if (node->parentIndex != InvalidNode) {
+					var parent = temp[node->parentIndex];
+					if (parent.child1 == index) {
+						parent.child1 = newIndex;
+					} else if (parent.child2 == index) {
+						parent.child2 = newIndex;
+					} else {
+						throw new InvalidOperationException();
+					}
+
+					temp[node->parentIndex] = parent;
+				}
+				
+				if (node->child1 != InvalidNode) {
+					stack[top++] = node->child1;
+					GetNode(node->child1)->parentIndex = newIndex;
+				}
+				
+				if (node->child2 != InvalidNode) {
+					stack[top++] = node->child2;
+					GetNode(node->child2)->parentIndex = newIndex;
+				}
+
+				temp[newIndex] = *node;
+
+			}
+
+			rootIndex[0] = 1;
+			
+			nodes->ClearAndResize<Node>(length);
+			UnsafeUtility.MemCpy(nodes->ptr, temp.GetUnsafePtr(), length * sizeof(Node));
+		}
+
 		private void RefitParents(int index) {
 			while (index != InvalidNode) {
 				int child1 = GetNode(index)->child1;
