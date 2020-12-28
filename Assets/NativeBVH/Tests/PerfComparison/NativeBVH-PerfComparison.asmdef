@@ -1,0 +1,28 @@
+{
+    "name": "NativeBVH-PerfComparison",
+    "references": [
+        "Unity.Jobs",
+        "Unity.Burst",
+        "Unity.Mathematics",
+        "UnityEngine.TestRunner",
+        "Unity.Collections",
+        "UnityEditor.TestRunner",
+        "NativeBVH",
+        "Unity.Physics",
+        "Unity.Entities",
+        "Unity.Transforms"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -228,7 +228,7 @@ namespace NativeBVH.Editor {
 
             s.Restart();
             job.Run();
-            Debug.Log("Took: " + s.Elapsed.TotalMilliseconds);
+            Debug.Log("Took: " + s.Elapsed.TotalMilliseconds + " results: " + rayResult.Length);
             
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
