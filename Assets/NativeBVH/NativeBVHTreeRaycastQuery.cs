@@ -16,7 +16,7 @@ namespace NativeBVH {
             ray.direction = math.normalize(ray.direction);
             var invD = 1 / ray.direction;
 
-            if (GetNode(rootIndex[0])->isLeaf) {
+            if (nodes[rootIndex[0]]->isLeaf) {
                 RayLeaf(ref this, rootIndex[0]);
                 return;
             }
@@ -24,19 +24,22 @@ namespace NativeBVH {
             var stack = stackalloc int[256];
             stack[0] = rootIndex[0];
             var top = 1;
+            int visits = 0;
             
             while (top > 0) {
                 var index = stack[--top];
-                var node = GetNode(index);
+                var node = nodes[index];
 
-                var child1 = GetNode(node->child1);
-                var child2 = GetNode(node->child2);
+                var child1 = nodes[node->child1];
+                var child2 = nodes[node->child2];
                 if (child1->isLeaf) {
                     RayLeaf(ref this, node->child1);
                 }
                 if (child2->isLeaf) {
                     RayLeaf(ref this, node->child2);
                 }
+
+                visits++;
 
                 var result = node->grandchildrenAabbs.Raycast(ray, invD);
 
@@ -47,7 +50,7 @@ namespace NativeBVH {
                 
                 void ProcessResult(ref NativeBVHTree tree, int childId,  int id) {
                     if (result[childId]) {
-                        var child = tree.GetNode(id);
+                        var child = tree. nodes[id];
                         if (child->isLeaf) {
                             RayLeaf(ref tree, id);
                         } else {
@@ -58,7 +61,7 @@ namespace NativeBVH {
             }
             
             void RayLeaf(ref NativeBVHTree tree, int id) {
-                var child = tree.GetNode(id);
+                var child = tree.nodes[id];
                 if ((ray.layerMask & child->layer) == 0 && child->collider.CastRay(ray)) {
                     results.Add(id);
                 }

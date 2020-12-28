@@ -6,32 +6,32 @@ namespace NativeBVH {
     /// </summary>
     public static unsafe class TreeRotations {
         public static void RotateOptimize(ref NativeBVHTree tree, int index) {
-            var node = tree.GetNode(index);
+            var node = tree.nodes[index];
             if (node->parentIndex != NativeBVHTree.InvalidNode) {
-                var parent = tree.GetNode(node->parentIndex);
+                var parent = tree.nodes[node->parentIndex];
                 if (parent->parentIndex != NativeBVHTree.InvalidNode) {
-                    var grandParent = tree.GetNode(parent->parentIndex);
+                    var grandParent = tree.nodes[parent->parentIndex];
 
                     // Four potential rotations, try them all
-                    TryRotate(ref tree, tree.GetNode(grandParent->child1)->child1, tree.GetNode(grandParent->child1)->child2, grandParent->child1, grandParent->child2);
-                    TryRotate(ref tree, tree.GetNode(grandParent->child1)->child2, tree.GetNode(grandParent->child1)->child1, grandParent->child1, grandParent->child2);
-                    TryRotate(ref tree, tree.GetNode(grandParent->child2)->child1, tree.GetNode(grandParent->child2)->child2, grandParent->child2, grandParent->child1);
-                    TryRotate(ref tree, tree.GetNode(grandParent->child2)->child2, tree.GetNode(grandParent->child2)->child1, grandParent->child2, grandParent->child1);
+                    TryRotate(ref tree, tree.nodes[grandParent->child1]->child1, tree.nodes[grandParent->child1]->child2, grandParent->child1, grandParent->child2);
+                    TryRotate(ref tree, tree.nodes[grandParent->child1]->child2, tree.nodes[grandParent->child1]->child1, grandParent->child1, grandParent->child2);
+                    TryRotate(ref tree, tree.nodes[grandParent->child2]->child1, tree.nodes[grandParent->child2]->child2, grandParent->child2, grandParent->child1);
+                    TryRotate(ref tree, tree.nodes[grandParent->child2]->child2, tree.nodes[grandParent->child2]->child1, grandParent->child2, grandParent->child1);
                 }
             }
         }
 
         private static void TryRotate(ref NativeBVHTree tree, int fromChild, int siblingChild, int fromParent, int toParent) {
             if (fromChild != NativeBVHTree.InvalidNode) {
-                if (tree.GetNode(siblingChild)->box.Union(tree.GetNode(toParent)->box).Area() < tree.GetNode(fromParent)->box.Area()) {
+                if (tree.nodes[siblingChild]->box.Union(tree.nodes[toParent]->box).Area() < tree.nodes[fromParent]->box.Area()) {
                     Rotate(ref tree, fromChild, toParent);
                 }
             }
         }
 
         private static void Rotate(ref NativeBVHTree tree, int fromIndex, int toIndex) {
-            var from = tree.GetNode(fromIndex);
-            var to = tree.GetNode(toIndex);
+            var from = tree.nodes[fromIndex];
+            var to = tree.nodes[toIndex];
 			
             var fromParentIndex = from->parentIndex;
             from->parentIndex = to->parentIndex;
@@ -42,11 +42,11 @@ namespace NativeBVH {
         }
 		
         private static void UpdateParent(ref NativeBVHTree tree, int fromIndex, int toIndex) {
-            var node = tree.GetNode(toIndex);
-            if (tree.GetNode(node->parentIndex)->child1 == fromIndex) {
-                tree.GetNode(node->parentIndex)->child1 = toIndex;
+            var node = tree.nodes[toIndex];
+            if (tree.nodes[node->parentIndex]->child1 == fromIndex) {
+                tree.nodes[node->parentIndex]->child1 = toIndex;
             } else {
-                tree.GetNode(node->parentIndex)->child2 = toIndex;
+                tree.nodes[node->parentIndex]->child2 = toIndex;
             }
         }
     }

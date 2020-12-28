@@ -19,7 +19,7 @@ namespace NativeBVH {
         
         private Allocator allocator;
         
-        public static UnsafeNodesList* Create<T>(int length, Allocator allocator, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory) where T : unmanaged {
+        public static UnsafeNodesList* Create(int length, Allocator allocator, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory) {
             var handle = new AllocatorManager.AllocatorHandle { Value = (int)allocator };
             UnsafeNodesList* listData = AllocatorManager.Allocate<UnsafeNodesList>(handle);
             UnsafeUtility.MemClear(listData, UnsafeUtility.SizeOf<UnsafeNodesList>());
@@ -28,7 +28,7 @@ namespace NativeBVH {
             listData->emptyIndices = UnsafeList.Create(UnsafeUtility.SizeOf<int>(), UnsafeUtility.AlignOf<int>(), length, allocator);
 
             if (length != 0) {
-                listData->Resize<T>(length);
+                listData->Resize(length);
             }
 
             if (options == NativeArrayOptions.ClearMemory && listData->ptr != null) {
@@ -44,14 +44,14 @@ namespace NativeBVH {
             AllocatorManager.Free(allocator, listData);
         }
 
-        public void RemoveAt<T>(int index) where T : unmanaged {
+        public void RemoveAt(int index) {
             emptyIndices->Add(index);
-            UnsafeUtility.WriteArrayElement(ptr, index, default(T));
+            UnsafeUtility.WriteArrayElement(ptr, index, default(Node));
         }
 
-        public int Add<T>(T element) where T : unmanaged {
+        public int Add(Node element) {
             if (emptyIndices->Length <= 0) {
-                Resize<T>(math.max(length * 2, 2));
+                Resize(math.max(length * 2, 2));
             }
 
             var index = UnsafeUtility.ReadArrayElement<int>(emptyIndices->Ptr, emptyIndices->Length-1);
@@ -62,8 +62,8 @@ namespace NativeBVH {
             return index;
         }
         
-        public T* Get<T>(int index) where T : unmanaged {
-            return (T*) ((long) ptr + (long) index * sizeof (T));
+        public Node* Get(int index) {
+            return (Node*) ((long) ptr + (long) index * sizeof (Node));
         }
 
         public void Dispose() {
@@ -76,15 +76,15 @@ namespace NativeBVH {
             }
         }
         
-        private void Resize<T>(int newLength) where T : unmanaged{
+        private void Resize(int newLength) {
             void* newPointer = null;
 
             if (newLength > 0) {
-                newPointer = AllocatorManager.Allocate(allocator, UnsafeUtility.SizeOf<T>(),  UnsafeUtility.AlignOf<T>(), newLength);
+                newPointer = AllocatorManager.Allocate(allocator, UnsafeUtility.SizeOf<Node>(),  UnsafeUtility.AlignOf<Node>(), newLength);
 
                 if (length > 0) {
                     var itemsToCopy = math.min(length, newLength);
-                    var bytesToCopy = itemsToCopy * UnsafeUtility.SizeOf<T>();
+                    var bytesToCopy = itemsToCopy * UnsafeUtility.SizeOf<Node>();
                     UnsafeUtility.MemCpy(newPointer, ptr, bytesToCopy);
                 }
             }
@@ -98,5 +98,7 @@ namespace NativeBVH {
             ptr = newPointer;
             length = newLength;
         }
+        
+        public Node* this[int index] => Get(index);
     }
 }

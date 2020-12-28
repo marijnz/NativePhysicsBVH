@@ -26,14 +26,16 @@ namespace NativeBVH {
 		public const int InvalidNode = 0;
 		
 		[NativeDisableUnsafePtrRestriction]
-		private UnsafeNodesList* nodes;
+		private UnsafeNodesList* nodesList;
+
+		internal UnsafeNodesList nodes => *nodesList;
 		
 		private NativeArray<int> rootIndex;
 		
 		private UnsafeMinHeap insertionHeap;
 
 		public NativeBVHTree(int initialCapacity = 64, Allocator allocator = Allocator.Temp) : this() {
-			nodes = UnsafeNodesList.Create<Node>(initialCapacity, allocator, NativeArrayOptions.ClearMemory);
+			nodesList = UnsafeNodesList.Create(initialCapacity, allocator, NativeArrayOptions.ClearMemory);
 			
 			rootIndex = new NativeArray<int>(1, allocator);
 
@@ -47,9 +49,9 @@ namespace NativeBVH {
 			insertionHeap.Clear();
 			
 			var leafIndex = AllocLeafNode(collider, layer);
-			var bounds = GetNode(leafIndex)->box;
+			var bounds = nodes[leafIndex]->box;
 			
-			if (nodes->length == 2) {
+			if (nodes.length == 2) {
 				rootIndex[0] = leafIndex;
 				return leafIndex;
 			}
@@ -61,7 +63,7 @@ namespace NativeBVH {
 
 			while (insertionHeap.Count != 0) {
 				var heapItem = insertionHeap.Pop();
-				var node = GetNode(heapItem.Id);
+				var node = nodes[heapItem.Id];
 
 				var union = node->box.Union(bounds);
 				var directCost = union.Area();
@@ -90,58 +92,58 @@ namespace NativeBVH {
 			var sibling = bestIndex;
 			
 			// Stage 2: create a new parent
-			int oldParent = GetNode(sibling)->parentIndex;
+			int oldParent = nodes[sibling]->parentIndex;
 			int newParent = AllocInternalNode();
-			GetNode(newParent)->parentIndex = oldParent;
-			GetNode(newParent)->box = bounds.Union(GetNode(sibling)->box);
+			nodes[newParent]->parentIndex = oldParent;
+			nodes[newParent]->box = bounds.Union(nodes[sibling]->box);
 			if (oldParent != InvalidNode) {
 				// The sibling was not the root
-				if (GetNode(oldParent)->child1 == sibling) {
-					GetNode(oldParent)->child1 = newParent;
+				if (nodes[oldParent]->child1 == sibling) {
+					nodes[oldParent]->child1 = newParent;
 				} else {
-					GetNode(oldParent)->child2 = newParent;
+					nodes[oldParent]->child2 = newParent;
 				}
 			} else { 
 				// The sibling was the root
 				rootIndex[0] = newParent;
 			}
 
-			GetNode(newParent)->child1 = sibling;
-			GetNode(newParent)->child2 = leafIndex;
-			GetNode(sibling)->parentIndex = newParent;
-			GetNode(leafIndex)->parentIndex = newParent;
+			nodes[newParent]->child1 = sibling;
+			nodes[newParent]->child2 = leafIndex;
+			nodes[sibling]->parentIndex = newParent;
+			nodes[leafIndex]->parentIndex = newParent;
 			
 			// Stage 3: walk back up the tree refitting AABBs
-			RefitParents(GetNode(leafIndex)->parentIndex);
+			RefitParents(nodes[leafIndex]->parentIndex);
 
 			return leafIndex;
 		}
 
 		public void RemoveLeaf(int index) {
-			var node = GetNode(index);
-			var parent = GetNode(node->parentIndex);
+			var node = nodes[index];
+			var parent = nodes[node->parentIndex];
 			var siblingIndex = parent->child1 == index ? parent->child2 : parent->child1;
 			
 			if (node->parentIndex != InvalidNode) {
 				// Node is not the root
 				if (parent->parentIndex != InvalidNode) {
 					// Parent also not the root
-					var grandParent = GetNode(parent->parentIndex);
+					var grandParent = nodes[parent->parentIndex];
 
 					if (grandParent->child1 == node->parentIndex) {
 						grandParent->child1 = siblingIndex;
 					} else {
 						grandParent->child2 = siblingIndex;
 					}
-					GetNode(siblingIndex)->parentIndex = parent->parentIndex;
+					nodes[siblingIndex]->parentIndex = parent->parentIndex;
 				} else {
 					// Parent is the root
 					// So make sibling the root instead
-					GetNode(siblingIndex)->parentIndex = InvalidNode;
+					nodes[siblingIndex]->parentIndex = InvalidNode;
 					rootIndex[0] = siblingIndex;
 				}
 
-				if (!GetNode(node->parentIndex)->isLeaf) {
+				if (!nodes[node->parentIndex]->isLeaf) {
 					RefitParents(node->parentIndex);
 				}
 			} else {
@@ -156,25 +158,23 @@ namespace NativeBVH {
 
 		private void RefitParents(int index) {
 			while (index != InvalidNode) {
-				int child1 = GetNode(index)->child1;
-				int child2 = GetNode(index)->child2;
-				GetNode(index)->box = GetNode(child1)->box.Union(GetNode(child2)->box);
+				int child1 = nodes[index]->child1;
+				int child2 = nodes[index]->child2;
+				nodes[index]->box = nodes[child1]->box.Union(nodes[child2]->box);
 				
 				//TODO: Mark node as dirty and set grandchildrenAabbs in a later single pass
-				GetNode(index)->grandchildrenAabbs.SetAabb(0, GetNode(GetNode(child1)->child1)->box);
-				GetNode(index)->grandchildrenAabbs.SetAabb(1, GetNode(GetNode(child1)->child2)->box);
-				GetNode(index)->grandchildrenAabbs.SetAabb(2, GetNode(GetNode(child2)->child1)->box);
-				GetNode(index)->grandchildrenAabbs.SetAabb(3, GetNode(GetNode(child2)->child2)->box);
+				nodes[index]->grandchildrenAabbs.SetAabb(0, nodes[nodes[child1]->child1]->box);
+				nodes[index]->grandchildrenAabbs.SetAabb(1, nodes[nodes[child1]->child2]->box);
+				nodes[index]->grandchildrenAabbs.SetAabb(2, nodes[nodes[child2]->child1]->box);
+				nodes[index]->grandchildrenAabbs.SetAabb(3, nodes[nodes[child2]->child2]->box);
 				
 				// Balance whilst refitting
 				TreeRotations.RotateOptimize(ref this, index);
 				
-				index = GetNode(index)->parentIndex;
+				index = nodes[index]->parentIndex;
 			}
 		}
-
-		private Node* GetNode(int index) => nodes->Get<Node>(index);
-
+		
 		private int AllocLeafNode(Collider collider, uint layer) {
 			var box = collider.CalculateBounds();
 			// Expand a bit for some room for movement without an update. TODO: proper implementation
@@ -185,7 +185,7 @@ namespace NativeBVH {
 				isLeaf = true,
 				layer = layer
 			};
-			var id = nodes->Add<Node>(node);
+			var id = nodes.Add(node);
 			return id;
 		}
 		
@@ -193,17 +193,17 @@ namespace NativeBVH {
 			var node = new Node {
 				isLeaf = false
 			};
-			var id = nodes->Add(node);
+			var id = nodes.Add(node);
 			return id;
 		}
 		
 		private void DeallocNode(int index) {
-			nodes->RemoveAt<Node>(index);
+			nodes.RemoveAt(index);
 		}
 
 		public void Dispose() {
-			UnsafeNodesList.Destroy(nodes);
-			nodes = null;
+			UnsafeNodesList.Destroy(nodesList);
+			nodesList = null;
 			insertionHeap.Dispose();
 			rootIndex.Dispose();
 		}
@@ -213,11 +213,11 @@ namespace NativeBVH {
 		}
 		
 		public Node DebugGetNode(int index) {
-			return *GetNode(index);
+			return *nodes[index];
 		}
 		
 		public int DebugGetTotalNodesLength() {
-			return nodes->length;
+			return nodes.length;
 		}
 	}
 }
