@@ -8,10 +8,10 @@ using UnityEngine;
 namespace NativeBVH.Editor {
     [ExecuteInEditMode]
     public class NativeBVHDebugDrawer : MonoBehaviour {
-        public bool HideInternalNodes;
-        public bool HideLeafNodes;
-        public bool HideColliderPrimitives;
-        public bool ShowHitsOnly;
+        public bool HideInternalNodes = true;
+        public bool HideLeafNodes = true;
+        public bool HideColliderPrimitives = false;
+        public bool ShowHitsOnly = false;
         
         // Limit to node & parent traversal
         public int LimitToId;
@@ -68,7 +68,7 @@ namespace NativeBVH.Editor {
                 }
 
                 if (!HideColliderPrimitives && node.isLeaf) {
-                    node.collider.DebugDraw();
+                    node.collider.DebugDraw(node.box.Center);
                 }
 
                 if (LimitToId == nodeIndex) {

@@ -13,7 +13,7 @@ namespace NativeBVH {
         [NativeDisableUnsafePtrRestriction]
         public void* ptr;
         public int length;
-        	
+            
         [NativeDisableUnsafePtrRestriction]
         private UnsafeList* emptyIndices;
         

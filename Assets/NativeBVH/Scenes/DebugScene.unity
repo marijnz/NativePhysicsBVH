@@ -155,7 +155,7 @@ MonoBehaviour:
   HideInternalNodes: 0
   HideLeafNodes: 0
   HideColliderPrimitives: 0
-  ShowHitsOnly: 0
+  ShowHitsOnly: 1
   LimitToId: 0
   ParentDepth: 1
 --- !u!4 &143148217

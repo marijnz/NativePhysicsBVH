@@ -3,41 +3,41 @@ using Unity.Collections;
 using Unity.Jobs;
 
 namespace NativeBVH {
-	[BurstCompile]
-	public struct AddLeavesJob : IJob {
-		public NativeBVHTree Tree;
-		[ReadOnly] public NativeArray<Collider> Leaves;
+    [BurstCompile]
+    public struct AddLeavesJob : IJob {
+        public NativeBVHTree Tree;
+        [ReadOnly] public NativeArray<Collider> Leaves;
 
-		public void Execute() {
-			for (var i = 0; i < Leaves.Length; i++) {
-				Tree.InsertLeaf(Leaves[i]);
-			}
-		}
-	}
-	
-	[BurstCompile]
-	public struct RemoveLeavesJob : IJob {
-		public NativeBVHTree Tree;
-		[ReadOnly] public NativeArray<int> Leaves;
+        public void Execute() {
+            for (var i = 0; i < Leaves.Length; i++) {
+                Tree.InsertLeaf(Leaves[i]);
+            }
+        }
+    }
+    
+    [BurstCompile]
+    public struct RemoveLeavesJob : IJob {
+        public NativeBVHTree Tree;
+        [ReadOnly] public NativeArray<int> Leaves;
 
-		public void Execute() {
-			for (var i = 0; i < Leaves.Length; i++) {
-				Tree.RemoveLeaf(Leaves[i]);
-			}
-		}
-	}
+        public void Execute() {
+            for (var i = 0; i < Leaves.Length; i++) {
+                Tree.RemoveLeaf(Leaves[i]);
+            }
+        }
+    }
 
-	[BurstCompile]
-	public struct RaycastJob : IJob {
-		[ReadOnly] public NativeBVHTree Tree;
-		[ReadOnly] public NativeBVHTree.Ray Ray;
-		public NativeList<int> Results;
-		
-		public void Execute() {
-			for (int i = 0; i < 10000; i++) {
-				Results.Clear();
-				Tree.RayCast(Ray, Results);
-			}
-		}
-	}
+    [BurstCompile]
+    public struct RaycastJob : IJob {
+        [ReadOnly] public NativeBVHTree Tree;
+        [ReadOnly] public NativeBVHTree.Ray Ray;
+        public NativeList<int> Results;
+        
+        public void Execute() {
+            for (int i = 0; i < 10000; i++) {
+                Results.Clear();
+                Tree.RayCast(Ray, Results);
+            }
+        }
+    }
 }

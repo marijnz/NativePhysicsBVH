@@ -11,7 +11,7 @@ namespace NativeBVH {
             public float maxDistance;
             public uint layerMask;
         }
-		
+        
         public void RayCast(Ray ray, NativeList<int> results) {
             ray.direction = math.normalize(ray.direction);
             var invD = 1 / ray.direction;
@@ -62,7 +62,8 @@ namespace NativeBVH {
             
             void RayLeaf(ref NativeBVHTree tree, int id) {
                 var child = tree.nodes[id];
-                if ((ray.layerMask & child->layer) == 0 && child->collider.CastRay(ray)) {
+                var transform = new RigidTransform {pos = child->box.Center}; //TODO: Use transform
+                if ((ray.layerMask & child->layer) == 0 && child->collider.CastRay(ray, transform)) {
                     results.Add(id);
                 }
             }
