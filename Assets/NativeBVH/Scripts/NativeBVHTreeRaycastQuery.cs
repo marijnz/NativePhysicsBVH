@@ -31,10 +31,10 @@ namespace NativeBVH {
 
                 var child1 = nodes[node->child1];
                 var child2 = nodes[node->child2];
-                if (child1->isLeaf) {
+                if (child1->isLeaf && IntersectionUtils.Overlap(child1->box.LowerBound, child1->box.UpperBound, ref ray, invD)) {
                     RayLeaf(ref this, node->child1);
                 }
-                if (child2->isLeaf) {
+                if (child2->isLeaf && IntersectionUtils.Overlap(child2->box.LowerBound, child2->box.UpperBound, ref ray, invD)) {
                     RayLeaf(ref this, node->child2);
                 }
 
