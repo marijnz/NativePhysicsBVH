@@ -14,13 +14,13 @@ namespace NativeBVH {
         // Inlining primitive data
         public fixed byte data[24];
 
-        public bool CastRay(NativeBVHTree.Ray ray, RigidTransform transform = default) {
+        public bool CastRay(NativeBVHTree.Ray ray) {
             fixed (Collider* target = &this) {
                 switch (type) {
                     case Type.Box:
-                        return ((BoxCollider*) target->data)->CastRay(ray, transform);
+                        return ((BoxCollider*) target->data)->CastRay(ray);
                     case Type.Sphere:
-                        return ((SphereCollider*) target->data)->CastRay(ray, transform);
+                        return ((SphereCollider*) target->data)->CastRay(ray);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -44,21 +44,29 @@ namespace NativeBVH {
             }
         }
         
-        public void DebugDraw(float3 position) {
-            fixed (Collider* target = &this) {
-                switch (type) {
-                    case Type.Box:
-                        var box = ((BoxCollider*) target->data);
-                        Gizmos.DrawCube(position + box->center, box->size);
-                        break;
-                    case Type.Sphere:
-                        var sphere = ((SphereCollider*) target->data);
-                        Gizmos.DrawSphere(position + sphere->center, sphere->radius);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
+        public void DebugDraw(RigidTransform transform) {
+            var prevMatrics = Gizmos.matrix;
+            try {
+                var rotationMatrix = Matrix4x4.TRS(transform.pos, transform.rot, Vector3.one);
+                Gizmos.matrix = rotationMatrix;
+                fixed (Collider* target = &this) {
+                    switch (type) {
+                        case Type.Box:
+                            var box = ((BoxCollider*) target->data);
+                            Gizmos.DrawCube(box->center, box->size);
+                            break;
+                        case Type.Sphere:
+                            var sphere = ((SphereCollider*) target->data);
+                            Gizmos.DrawSphere(sphere->center, sphere->radius);
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
                 }
+            } finally {
+                Gizmos.matrix = prevMatrics;
             }
+           
         }
     }
 
@@ -76,17 +84,23 @@ namespace NativeBVH {
             return collider;
         }
         
-        public AABB3D CalculateBounds(RigidTransform rigidTransform) {
+        public AABB3D CalculateBounds(RigidTransform transform) {
+            // From Unity.Physics
+            float3 centerInB = math.transform(transform, center);
+            float3 x = math.mul(transform.rot, new float3(size.x * 0.5f, 0, 0));
+            float3 y = math.mul(transform.rot, new float3(0, size.y * 0.5f, 0));
+            float3 z = math.mul(transform.rot, new float3(0, 0, size.z * 0.5f));
+            float3 halfExtentsInB = math.abs(x) + math.abs(y) + math.abs(z);
+            
             return new AABB3D {
-                //TODO: Rotations
-                LowerBound = rigidTransform.pos + center - size * .5f,
-                UpperBound = rigidTransform.pos + center + size * .5f
+                LowerBound = centerInB - halfExtentsInB,
+                UpperBound = centerInB + halfExtentsInB
             };
         }
 
-        public bool CastRay(NativeBVHTree.Ray ray, RigidTransform rigidTransform) {
+        public bool CastRay(NativeBVHTree.Ray ray) {
             var invD = 1 / ray.direction;
-            return IntersectionUtils.Overlap(rigidTransform.pos + LowerBound, rigidTransform.pos + UpperBound, ref ray, invD);
+            return IntersectionUtils.Overlap(LowerBound, UpperBound, ref ray, invD);
         }
     }
 
@@ -111,8 +125,8 @@ namespace NativeBVH {
         /// <summary>
         /// Per: Christer Ericson - Real-Time Collision Detection (p. 179)
         /// </summary>
-        public bool CastRay(NativeBVHTree.Ray ray, RigidTransform transform) {
-            var m = ray.origin - (transform.pos + center);
+        public bool CastRay(NativeBVHTree.Ray ray) {
+            var m = ray.origin - center;
             var c = math.dot(m, m) - radius * radius;
             // If there is definitely at least one real root, there must be an intersection
             if (c <= 0.0f) {

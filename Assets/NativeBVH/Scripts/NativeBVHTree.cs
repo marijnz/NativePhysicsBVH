@@ -5,19 +5,21 @@ using Unity.Mathematics;
 using UnityEngine.Assertions;
 
 namespace NativeBVH {
-
+    public struct Leaf {
+        public Collider collider;
+        public RigidTransform transform;
+        public uint layer;
+    }
+    
     public struct Node {
+        public AABB3D box;
         public int parentIndex;
-     
         public bool isLeaf;
         
         // Leaf only
-        public AABB3D box;
-        public Collider collider;
-        public RigidTransform transform; // TODO: Use this for collider queries
-        public uint layer;
+        public Leaf leaf;
         
-        // Internal only
+        // Internal only TODO: layout as union
         public SimpleFourTransposedAabbs grandchildrenAabbs;
         public int child1;
         public int child2;
@@ -27,8 +29,7 @@ namespace NativeBVH {
     /// Implemented per https://box2d.org/files/ErinCatto_DynamicBVH_GDC2019.pdf. WIP.
     ///
     /// Optimizations left:
-    /// - Rotations (in optimize pass or insertion/deletion)
-    /// - Make array linear (in optimize pass)
+    /// - Minimize size of Node
     /// </summary>
     public unsafe partial struct NativeBVHTree : IDisposable {
         public struct Configuration {
@@ -62,9 +63,18 @@ namespace NativeBVH {
         }
 
         public int InsertLeaf(Collider collider, uint layer = 0xffffffff, RigidTransform transform = default) {
+            return InsertLeaf(new Leaf {collider = collider, layer = layer, transform = transform});
+        }
+
+        public int InsertLeaf(Leaf entry) {
+            if (math.all(entry.transform.rot.value == 0) ) {
+                // Fix invalid rotation
+                entry.transform.rot = quaternion.identity;
+            }
+            
             insertionHeap.Clear();
             
-            var leafIndex = AllocLeafNode(collider, layer, transform);
+            var leafIndex = AllocLeafNode(ref entry);
             var bounds = nodes[leafIndex]->box;
             
             if (nodes.length == 2) {
@@ -197,15 +207,14 @@ namespace NativeBVH {
             }
         }
         
-        private int AllocLeafNode(Collider collider, uint layer = 0xffffffff, RigidTransform transform = default) {
-            var box = collider.CalculateBounds(transform);
+        private int AllocLeafNode(ref Leaf leaf) {
+            var box = leaf.collider.CalculateBounds(leaf.transform);
             // Expand a bit for some room for movement without an update. TODO: proper implementation
             box.Expand(config.BoundsExpansion); 
             var node = new Node {
                 box = box,
-                collider = collider,
+                leaf = leaf,
                 isLeaf = true,
-                layer = layer
             };
             var id = nodes.Add(node);
             return id;

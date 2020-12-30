@@ -1,12 +1,13 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 
 namespace NativeBVH {
     [BurstCompile]
     public struct AddLeavesJob : IJob {
         public NativeBVHTree Tree;
-        [ReadOnly] public NativeArray<Collider> Leaves;
+        [ReadOnly] public NativeArray<Leaf> Leaves;
 
         public void Execute() {
             for (var i = 0; i < Leaves.Length; i++) {

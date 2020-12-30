@@ -58,13 +58,104 @@ namespace NativeBVH.Editor {
             };
             tree.RayCast(ray, rayResult);
             
+            // Debug
+            NativeBVHDebugDrawer.LastTree = tree;
+            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastRay = ray;
+            
             // Assert
             Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
+        }
+        
+        [Test]
+        public void TestRayTwoBoxesTransformPosition() {
+            // Insertion
+            var tree = new NativeBVHTree(64, Allocator.Persistent);
+            var transform = RigidTransform.identity;
+            transform.pos = new float3(10, 1, 0);
+            var expectedIndex = tree.InsertLeaf(BoxCollider.Create(new float3(-10, 0, 0), new float3(1, 1, 2)), transform:transform);
+            tree.InsertLeaf(BoxCollider.Create(new float3(-10, 0, 0), new float3(3, 3, 3)));
+            
+            // Raycast
+            var rayResult = new NativeList<int>(64, Allocator.Temp);
+            var ray = new NativeBVHTree.Ray {
+                origin = new float3(-1, 1, 0),
+                direction = new float3(10, 0, 10),
+                minDistance = 0,
+                maxDistance = 20
+            };
+            tree.RayCast(ray, rayResult);
             
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
             NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
+            
+            // Assert
+            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
+            Assert.AreEqual(expectedIndex, rayResult[0], "Expected first leaf to be hit");
+        }
+        
+        [Test]
+        public void TestRayTwoBoxesWithTransformRotation() {
+            // Insertion
+            var tree = new NativeBVHTree(64, Allocator.Persistent);
+            var transform = RigidTransform.identity;
+            transform.rot = quaternion.Euler(45, 0, 0);
+            var expectedIndex = tree.InsertLeaf(BoxCollider.Create(new float3(1, 2, 1), new float3(1, 1, 3)), transform:transform);
+            tree.InsertLeaf(BoxCollider.Create(new float3(1, 2, 1), new float3(1, 1, 3)));
+            
+            //TODO rotation
+            // Raycast
+            var rayResult = new NativeList<int>(64, Allocator.Temp);
+            var ray = new NativeBVHTree.Ray {
+                origin = new float3(-1, 1, 0),
+                direction = new float3(10, 0, 10),
+                minDistance = 0,
+                maxDistance = 20
+            };
+            tree.RayCast(ray, rayResult);
+
+            // Debug
+            NativeBVHDebugDrawer.LastTree = tree;
+            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastRay = ray;
+            
+            // Assert
+            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
+            Assert.AreEqual(expectedIndex, rayResult[0], "Expected first leaf to be hit");
+        }
+        
+        
+        [Test]
+        public void TestRayTwoBoxesWithTransformPositionAndRotation() {
+            // Insertion
+            var tree = new NativeBVHTree(64, Allocator.Persistent);
+            var transform = RigidTransform.identity;
+            transform.rot = quaternion.Euler(45, 0, 0);
+            transform.pos = new float3(1, 2, 1);
+            var expectedIndex = tree.InsertLeaf(BoxCollider.Create(default, new float3(1, 1, 3)), transform:transform);
+            tree.InsertLeaf(BoxCollider.Create(new float3(1, 2, 1), new float3(1, 1, 3)));
+            
+            //TODO rotation
+            // Raycast
+            var rayResult = new NativeList<int>(64, Allocator.Temp);
+            var ray = new NativeBVHTree.Ray {
+                origin = new float3(-1, 1, 0),
+                direction = new float3(10, 0, 10),
+                minDistance = 0,
+                maxDistance = 20
+            };
+            tree.RayCast(ray, rayResult);
+
+            // Debug
+            NativeBVHDebugDrawer.LastTree = tree;
+            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastRay = ray;
+            
+            // Assert
+            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
+            Assert.AreEqual(expectedIndex, rayResult[0], "Expected first leaf to be hit");
         }
         
         [Test]
@@ -121,7 +212,7 @@ namespace NativeBVH.Editor {
             // Assert
             Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
         }
-        
+
         [Test]
         public void TestRayRandomManyBoxes() {
             // Insertion
@@ -188,17 +279,17 @@ namespace NativeBVH.Editor {
 
         private void RunJob(int amount) {
             // Insertion
-            NativeList<Collider> leaves = new NativeList<Collider>(amount, Allocator.TempJob);
+            NativeList<Leaf> leaves = new NativeList<Leaf>(amount, Allocator.TempJob);
             var tree = new NativeBVHTree(5000, Allocator.Persistent);
             for (int i = 0; i < amount / 2; i++) {
                 var center = new float3(UnityEngine.Random.Range(0, 300), UnityEngine.Random.Range(0, 300),  UnityEngine.Random.Range(0, 300));
                 var size = new float3(UnityEngine.Random.Range(5, 10), UnityEngine.Random.Range(5, 10), UnityEngine.Random.Range(5, 10));
-                leaves.Add(BoxCollider.Create(center, size));
+                leaves.Add(new Leaf { collider = BoxCollider.Create(default, size), transform = new RigidTransform(quaternion.identity, center)});
             }
             
             for (int i = 0; i < amount / 2; i++) {
                 var center = new float3(UnityEngine.Random.Range(0, 300), UnityEngine.Random.Range(0, 300),  UnityEngine.Random.Range(0, 300));
-                leaves.Add(SphereCollider.Create(center, UnityEngine.Random.Range(5, 10)));
+                leaves.Add(new Leaf { collider = SphereCollider.Create(default, UnityEngine.Random.Range(5, 10)), transform = new RigidTransform(quaternion.identity, center)});
             }
             
             var s = Stopwatch.StartNew();

@@ -68,7 +68,7 @@ namespace NativeBVH.Editor {
                 }
 
                 if (!HideColliderPrimitives && node.isLeaf) {
-                    node.collider.DebugDraw(node.box.Center);
+                    node.leaf.collider.DebugDraw(node.leaf.transform);
                 }
 
                 if (LimitToId == nodeIndex) {

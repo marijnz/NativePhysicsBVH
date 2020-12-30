@@ -24,7 +24,6 @@ namespace NativeBVH {
             var stack = stackalloc int[256];
             stack[0] = rootIndex[0];
             var top = 1;
-            int visits = 0;
             
             while (top > 0) {
                 var index = stack[--top];
@@ -38,8 +37,6 @@ namespace NativeBVH {
                 if (child2->isLeaf) {
                     RayLeaf(ref this, node->child2);
                 }
-
-                visits++;
 
                 var result = node->grandchildrenAabbs.Raycast(ray, invD);
 
@@ -62,11 +59,20 @@ namespace NativeBVH {
             
             void RayLeaf(ref NativeBVHTree tree, int id) {
                 var child = tree.nodes[id];
-                var transform = new RigidTransform {pos = child->box.Center}; //TODO: Use transform
-                if ((ray.layerMask & child->layer) == 0 && child->collider.CastRay(ray, transform)) {
+                if ((ray.layerMask & child->leaf.layer) == 0 && tree.CastRay(ray, ref child->leaf)) {
                     results.Add(id);
                 }
             }
+        }
+        
+        private bool CastRay(Ray ray, ref Leaf leaf) {
+            // Translate ray into node space
+            var inverse = math.inverse(leaf.transform);
+            ray.origin = math.transform(inverse, ray.origin); 
+            ray.direction = math.rotate(inverse, ray.direction);
+            
+            // And cast the ray on the collider
+            return leaf.collider.CastRay(ray);
         }
     }
 }
