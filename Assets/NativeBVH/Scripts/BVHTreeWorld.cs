@@ -3,63 +3,62 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEngine.Profiling;
 
 namespace NativeBVH {
     public struct BVHTreeWorld : IDisposable {
         private const float ExpandSize = 1;
 
-        public struct Entity {
+        public struct Body {
             public Collider collider;
             public RigidTransform transform;
-            public int id;
+            public int nodeId;
             public AABB3D expandedBounds;
         }
 
-        public NativeList<Entity> entities;
+        public NativeList<Body> bodies;
         public NativeBVHTree tree;
         
         public BVHTreeWorld(int initialCapacity = 64, Allocator allocator = Allocator.Temp) : this() {
             tree = new NativeBVHTree(initialCapacity, allocator, new NativeBVHTree.Configuration { BoundsExpansion = ExpandSize});
-            entities = new NativeList<Entity>(initialCapacity, allocator);
+            bodies = new NativeList<Body>(initialCapacity, allocator);
         }
 
         public int Add(Collider collider) {
             var index = tree.InsertLeaf(collider);
-            entities.Add(new Entity {id = index, collider = collider});
+            bodies.Add(new Body {nodeId = index, collider = collider});
             return index;
         }
         
         public void UpdateTransform(int index, RigidTransform transform) {
-            var entity = entities[index];
-            entity.transform = transform;
-            entities[index] = entity;
+            var body = bodies[index];
+            body.transform = transform;
+            bodies[index] = body;
         }
 
         public void Update() {
-            new UpdateWorldJob {Tree = tree, Entities = entities}.Run();
+            new UpdateWorldJob {Tree = tree, Bodies = bodies}.Run();
         }
 
         public void Dispose() {
             tree.Dispose();
-            entities.Dispose();
+            bodies.Dispose();
         }
         
         [BurstCompile]
         public struct UpdateWorldJob : IJob {
             public NativeBVHTree Tree;
-            public NativeList<Entity> Entities;
+            public NativeList<Body> Bodies;
 
             public void Execute() {
-                for (var i = 0; i < Entities.Length; i++) {
-                    var entity = Entities[i];
-                    var bounds = entity.collider.CalculateBounds(entity.transform);
-                    var union = bounds.Union(entity.expandedBounds);
-                    if (math.any(union.LowerBound != entity.expandedBounds.LowerBound) || math.any(union.UpperBound != entity.expandedBounds.UpperBound)) {
+                for (var i = 0; i < Bodies.Length; i++) {
+                    var body = Bodies[i];
+                    var bounds = body.collider.CalculateBounds(body.transform);
+                    var union = bounds.Union(body.expandedBounds);
+                    if (math.any(union.LowerBound != body.expandedBounds.LowerBound) || math.any(union.UpperBound != body.expandedBounds.UpperBound)) {
                         bounds.Expand(ExpandSize);
-                        entity.expandedBounds = bounds;
-                        Tree.Reinsert(Entities[i].id, Entities[i].collider, transform:Entities[i].transform);
-                        Entities[i] = entity;
+                        body.expandedBounds = bounds;
+                        Tree.Reinsert(Bodies[i].nodeId, Bodies[i].collider, Bodies[i].transform);
+                        Bodies[i] = body;
                     }
                 }
             }
@@ -68,29 +67,15 @@ namespace NativeBVH {
         [BurstCompile]
         public struct InsertJob : IJob {
             public NativeBVHTree Tree;
-            public NativeList<Entity> Entities;
-            [ReadOnly] public NativeArray<Collider> Leaves;
+            public NativeList<Body> Bodies;
+            [ReadOnly] public NativeArray<Collider> Colliders;
 
             public void Execute() {
-                for (var i = 0; i < Leaves.Length; i++) {
-                    var index = Tree.InsertLeaf(Leaves[i]);
-                    Entities.Add(new Entity {id = index, collider = Leaves[i]});
+                for (var i = 0; i < Colliders.Length; i++) {
+                    var index = Tree.InsertLeaf(Colliders[i]);
+                    Bodies.Add(new Body {nodeId = index, collider = Colliders[i]});
                 }
             }
         }
-        
-        /*
-        [BurstCompile]
-        public struct UpdateJob : IJob {
-            public BVHTreeWorld World;
-            [ReadOnly] public NativeList<int> EntityIndices;
-
-            public void Execute() {
-                for (var i = 0; i < EntityIndices.Length; i++) {
-                    var entityId = EntityIndices[i];
-                    
-                }
-            }
-        }*/
     }
 }

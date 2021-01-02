@@ -19,7 +19,7 @@ namespace NativeBVH {
         // Leaf only
         public Leaf leaf;
         
-        // Internal only TODO: layout as union
+        // Internal only
         public SimpleFourTransposedAabbs grandchildrenAabbs;
         public int child1;
         public int child2;
@@ -33,7 +33,7 @@ namespace NativeBVH {
     /// </summary>
     public unsafe partial struct NativeBVHTree : IDisposable {
         public struct Configuration {
-            public float BoundsExpansion; // To support some wiggle room for dynamic objects
+            public float BoundsExpansion; // To support some wiggle room for moving objects
         }
         
         public const int InvalidNode = 0;
@@ -41,6 +41,7 @@ namespace NativeBVH {
         [NativeDisableUnsafePtrRestriction]
         private UnsafeNodesList* nodesList;
 
+        /// NOTE: This should only be used for reading. This can't be forced through an interface as it would make it managed.
         internal UnsafeNodesList nodes => *nodesList;
         
         private NativeArray<int> rootIndex;
@@ -62,22 +63,19 @@ namespace NativeBVH {
             this.config = config;
         }
 
-        public int InsertLeaf(Collider collider, uint layer = 0xffffffff, RigidTransform transform = default) {
+        public int InsertLeaf(Collider collider, uint layer = 0xffffffff) {
+            return InsertLeaf(new Leaf {collider = collider, layer = layer, transform = RigidTransform.identity});
+        }
+        
+        public int InsertLeaf(Collider collider, RigidTransform transform, uint layer = 0xffffffff) {
             return InsertLeaf(new Leaf {collider = collider, layer = layer, transform = transform});
         }
 
         public int InsertLeaf(Leaf entry) {
-            if (math.all(entry.transform.rot.value == 0) ) {
-                // Fix invalid rotation
-                entry.transform.rot = quaternion.identity;
-            }
-            
-            insertionHeap.Clear();
-            
             var leafIndex = AllocLeafNode(ref entry);
             var bounds = nodes[leafIndex]->box;
             
-            if (nodes.length == 2) {
+            if (rootIndex[0] == InvalidNode) {
                 rootIndex[0] = leafIndex;
                 return leafIndex;
             }
@@ -114,6 +112,12 @@ namespace NativeBVH {
                     }
                 }
             }
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (bestIndex <= InvalidNode) {
+                throw new InvalidOperationException();
+            }
+#endif
 
             var sibling = bestIndex;
             
@@ -182,9 +186,9 @@ namespace NativeBVH {
             DeallocNode(index);
         }
 
-        public void Reinsert(int index, Collider collider, uint layer = 0xffffffff, RigidTransform transform = default) {
+        public void Reinsert(int index, Collider collider, RigidTransform transform, uint layer = 0xffffffff) {
             RemoveLeaf(index);
-            var newIndex = InsertLeaf(collider, layer, transform); 
+            var newIndex = InsertLeaf(collider, transform, layer); 
             Assert.AreEqual(index, newIndex);
         }
 
@@ -216,7 +220,7 @@ namespace NativeBVH {
                 leaf = leaf,
                 isLeaf = true,
             };
-            var id = nodes.Add(node);
+            var id = nodesList->Add(node);
             return id;
         }
         
@@ -224,12 +228,12 @@ namespace NativeBVH {
             var node = new Node {
                 isLeaf = false
             };
-            var id = nodes.Add(node);
+            var id = nodesList->Add(node);
             return id;
         }
         
         private void DeallocNode(int index) {
-            nodes.RemoveAt(index);
+            nodesList->RemoveAt(index);
         }
 
         public void Dispose() {

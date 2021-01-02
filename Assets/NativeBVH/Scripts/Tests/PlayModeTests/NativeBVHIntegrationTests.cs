@@ -25,12 +25,12 @@ namespace NativeBVH {
             Random.InitState(0);
             var go = new GameObject("debug");
             go.AddComponent<NativeBVHDebugDrawer>();
-            var world = new BVHTreeWorld(10000, Allocator.Persistent);
+            var world = new BVHTreeWorld(amount, Allocator.Persistent);
             
             var movingObjects = new List<MovingObject>();
             
             NativeBVHDebugDrawer.LastTree = world.tree;
-            NativeList<Collider> colliders = new NativeList<Collider>(5000, Allocator.TempJob);
+            NativeList<Collider> colliders = new NativeList<Collider>(amount, Allocator.TempJob);
 
             for (int i = 0; i < amount/2; i++) {
                 var center = new float3(UnityEngine.Random.Range(0, 0), UnityEngine.Random.Range(0, 0),  UnityEngine.Random.Range(0, 0));
@@ -45,16 +45,16 @@ namespace NativeBVH {
             
             new BVHTreeWorld.InsertJob {
                 Tree = world.tree,
-                Leaves = new NativeList<Collider>(0, Allocator.TempJob)
+                Bodies = new NativeList<BVHTreeWorld.Body>(0, Allocator.TempJob),
+                Colliders = new NativeList<Collider>(0, Allocator.TempJob),
             }.Run();
             
             new BVHTreeWorld.InsertJob {
                 Tree = world.tree,
-                Entities = world.entities,
-                Leaves = colliders
+                Bodies = world.bodies,
+                Colliders = colliders,
             }.Run();
 
-            
             var until = Time.time + 30;
 
             // Prep raycast
@@ -73,7 +73,7 @@ namespace NativeBVH {
                 Results = rayResult,
             };
             
-            for (var i = 0; i < amount; i++) {
+            for (var i = 0; i < world.bodies.Length; i++) {
                 movingObjects.Add(new MovingObject {
                     transform = RigidTransform.identity,
                     velocity = new float3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f))
@@ -82,26 +82,22 @@ namespace NativeBVH {
             
             while (Time.time < until) {
                 // Update
-                Profiler.BeginSample("World.Update");
+                Profiler.BeginSample("BVH - World.Update");
                 world.Update();
                 Profiler.EndSample();
-                Profiler.BeginSample("Raycast");
+                Profiler.BeginSample("BVH - Raycast");
                 job.Run();
                 Profiler.EndSample();
                 yield return null;
-
-
-                for (var i = 1; i < movingObjects.Count; i++) {
+                
+                for (var i = 0; i < world.bodies.Length; i++) {
+                    // Update position
                     var movingObject = movingObjects[i];
                     movingObject.transform.pos += movingObject.velocity * Time.deltaTime * 2;
-                    world.UpdateTransform(i, movingObject.transform);
                     movingObjects[i] = movingObject;
+                    // And update world
+                    world.UpdateTransform(i, movingObject.transform);
                 }
-
-                // Assertion
-                //if (rayResult.Length != 9) {
-                //    Debug.LogError("Expected 9 hits");
-                //}
                 
                 // Debug
                 NativeBVHDebugDrawer.LastTree = world.tree;

@@ -47,8 +47,7 @@ namespace NativeBVH {
         public void DebugDraw(RigidTransform transform) {
             var prevMatrics = Gizmos.matrix;
             try {
-                var rotationMatrix = Matrix4x4.TRS(transform.pos, transform.rot, Vector3.one);
-                Gizmos.matrix = rotationMatrix;
+                Gizmos.matrix = Matrix4x4.TRS(transform.pos, transform.rot, Vector3.one);;
                 fixed (Collider* target = &this) {
                     switch (type) {
                         case Type.Box:
@@ -66,7 +65,6 @@ namespace NativeBVH {
             } finally {
                 Gizmos.matrix = prevMatrics;
             }
-           
         }
     }
 

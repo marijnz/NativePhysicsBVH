@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Linq;
 using NUnit.Framework;
 using Unity.Collections;
 using Unity.Jobs;
@@ -12,8 +11,14 @@ namespace NativeBVH.Editor {
         [SetUp]
         public void Setup() {
             UnityEngine.Random.InitState(0);
+
+            NativeBVHDebugDrawer.LastTree = default;
+            NativeBVHDebugDrawer.LastTreeRayHits = default;
+            NativeBVHDebugDrawer.LastTreeRayVisited  = default;
+            NativeBVHDebugDrawer.LastRay = default;
         }
 
+        
         [Test]
         public void TestManyBoxes() {
             // Random boxes in a 3d space
