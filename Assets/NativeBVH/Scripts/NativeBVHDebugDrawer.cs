@@ -18,7 +18,7 @@ namespace NativeBVH.Editor {
         public int ParentDepth = 1;
 
         public static NativeBVHTree LastTree;
-        public static int[] LastTreeRayHits;
+        public static int[] LastTreeHits;
         public static bool[] LastTreeRayVisited;
 
         private int leafCount = 0;
@@ -50,7 +50,7 @@ namespace NativeBVH.Editor {
             var size = (box.UpperBound - box.LowerBound);
             var center = box.LowerBound + size / 2;
 
-            bool isHit = (LastTreeRayHits != null && LastTreeRayHits.Contains(nodeIndex));
+            bool isHit = (LastTreeHits != null && LastTreeHits.Contains(nodeIndex));
             bool isVisited = (LastTreeRayVisited != null && LastTreeRayVisited[nodeIndex]);
 
             if (isHit) {

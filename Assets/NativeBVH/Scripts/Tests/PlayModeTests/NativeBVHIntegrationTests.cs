@@ -101,7 +101,7 @@ namespace NativeBVH {
                 
                 // Debug
                 NativeBVHDebugDrawer.LastTree = world.tree;
-                NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+                NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
                 NativeBVHDebugDrawer.LastTreeRayVisited = new bool[world.tree.DebugGetTotalNodesLength()+1];
                 foreach (var i in rayVisited) {
                     NativeBVHDebugDrawer.LastTreeRayVisited[i] = true;

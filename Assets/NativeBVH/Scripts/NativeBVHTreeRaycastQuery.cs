@@ -12,9 +12,9 @@ namespace NativeBVH {
             public uint layerMask;
         }
         
-        public void RayCast(Ray ray, NativeList<int> results) {
+        public void RaycastQuery(Ray ray, NativeList<int> results) {
             ray.direction = math.normalize(ray.direction);
-            var invD = 1 / ray.direction;
+            var invD = math.rcp(ray.direction);
 
             if (nodes[rootIndex[0]]->isLeaf) {
                 RayLeaf(ref this, rootIndex[0]);
@@ -31,10 +31,10 @@ namespace NativeBVH {
 
                 var child1 = nodes[node->child1];
                 var child2 = nodes[node->child2];
-                if (child1->isLeaf && IntersectionUtils.Overlap(child1->box.LowerBound, child1->box.UpperBound, ref ray, invD)) {
+                if (child1->isLeaf && IntersectionUtils.DoesOverlap(ref child1->box, ref ray, invD)) {
                     RayLeaf(ref this, node->child1);
                 }
-                if (child2->isLeaf && IntersectionUtils.Overlap(child2->box.LowerBound, child2->box.UpperBound, ref ray, invD)) {
+                if (child2->isLeaf && IntersectionUtils.DoesOverlap(ref child2->box, ref ray, invD)) {
                     RayLeaf(ref this, node->child2);
                 }
 

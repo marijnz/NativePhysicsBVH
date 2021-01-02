@@ -37,7 +37,21 @@ namespace NativeBVH {
         public void Execute() {
             for (int i = 0; i < 10000; i++) {
                 Results.Clear();
-                Tree.RayCast(Ray, Results);
+                Tree.RaycastQuery(Ray, Results);
+            }
+        }
+    }
+    
+    [BurstCompile]
+    public struct DistanceJob : IJob {
+        [ReadOnly] public NativeBVHTree Tree;
+        [ReadOnly] public NativeBVHTree.Ray Ray;
+        public NativeList<int> Results;
+        
+        public void Execute() {
+            for (int i = 0; i < 10000; i++) {
+                Results.Clear();
+                Tree.RaycastQuery(Ray, Results);
             }
         }
     }

@@ -13,7 +13,7 @@ namespace NativeBVH.Editor {
             UnityEngine.Random.InitState(0);
 
             NativeBVHDebugDrawer.LastTree = default;
-            NativeBVHDebugDrawer.LastTreeRayHits = default;
+            NativeBVHDebugDrawer.LastTreeHits = default;
             NativeBVHDebugDrawer.LastTreeRayVisited  = default;
             NativeBVHDebugDrawer.LastRay = default;
         }
@@ -61,15 +61,39 @@ namespace NativeBVH.Editor {
                 minDistance = 0,
                 maxDistance = 20
             };
-            tree.RayCast(ray, rayResult);
+            tree.RaycastQuery(ray, rayResult);
             
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
             
             // Assert
             Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
+        }
+        
+        [Test]
+        public void TestDistanceTwoBoxes() {
+            // Insertion
+            var tree = new NativeBVHTree(64, Allocator.Persistent);
+            int expectedIndex = tree.InsertLeaf(BoxCollider.Create(new float3(0, 1, 0), new float3(2, 2, 2)));
+            tree.InsertLeaf(BoxCollider.Create(new float3(0, 1.2f, 0), new float3(2, 2, 2)));
+            
+            // Distance query
+            var rayResult = new NativeList<int>(64, Allocator.Temp);
+            var query = new NativeBVHTree.DistanceQueryInput {
+                origin = new float3(0, -1, 0),
+                maxDistance = 1.1f
+            };
+            tree.DistanceQuery(query, rayResult);
+            
+            // Debug
+            NativeBVHDebugDrawer.LastTree = tree;
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
+            
+            // Assert
+            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
+            Assert.AreEqual(expectedIndex, rayResult[0], "Expected nearer box to be the result");
         }
         
         [Test]
@@ -89,11 +113,11 @@ namespace NativeBVH.Editor {
                 minDistance = 0,
                 maxDistance = 20
             };
-            tree.RayCast(ray, rayResult);
+            tree.RaycastQuery(ray, rayResult);
             
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
             
             // Assert
@@ -119,18 +143,17 @@ namespace NativeBVH.Editor {
                 minDistance = 0,
                 maxDistance = 20
             };
-            tree.RayCast(ray, rayResult);
+            tree.RaycastQuery(ray, rayResult);
 
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
             
             // Assert
             Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
             Assert.AreEqual(expectedIndex, rayResult[0], "Expected first leaf to be hit");
         }
-        
         
         [Test]
         public void TestRayTwoBoxesWithTransformPositionAndRotation() {
@@ -151,11 +174,11 @@ namespace NativeBVH.Editor {
                 minDistance = 0,
                 maxDistance = 20
             };
-            tree.RayCast(ray, rayResult);
+            tree.RaycastQuery(ray, rayResult);
 
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
             
             // Assert
@@ -178,11 +201,11 @@ namespace NativeBVH.Editor {
                 minDistance = 0,
                 maxDistance = 20
             };
-            tree.RayCast(ray, rayResult);
+            tree.RaycastQuery(ray, rayResult);
 
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
             
             // Assert
@@ -207,11 +230,11 @@ namespace NativeBVH.Editor {
                 minDistance = 0,
                 maxDistance = 20
             };
-            tree.RayCast(ray, rayResult);
+            tree.RaycastQuery(ray, rayResult);
             
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
             
             // Assert
@@ -236,11 +259,11 @@ namespace NativeBVH.Editor {
                 minDistance = 0,
                 maxDistance = 200
             };
-            tree.RayCast(ray, rayResult);
+            tree.RaycastQuery(ray, rayResult);
             
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
         }
         
@@ -263,11 +286,11 @@ namespace NativeBVH.Editor {
                 maxDistance = 20,
                 layerMask = ~layer1
             };
-            tree.RayCast(ray, rayResult);
+            tree.RaycastQuery(ray, rayResult);
 
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastRay = ray;
             
             // Assert
@@ -328,7 +351,7 @@ namespace NativeBVH.Editor {
             
             // Debug
             NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeRayHits = rayResult.ToArray();
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
             NativeBVHDebugDrawer.LastTreeRayVisited  = new bool[tree.DebugGetTotalNodesLength()];
             foreach (var i in rayVisited) {
                 NativeBVHDebugDrawer.LastTreeRayVisited[i] = true;

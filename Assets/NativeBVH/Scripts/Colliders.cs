@@ -98,7 +98,7 @@ namespace NativeBVH {
 
         public bool CastRay(NativeBVHTree.Ray ray) {
             var invD = 1 / ray.direction;
-            return IntersectionUtils.Overlap(LowerBound, UpperBound, ref ray, invD);
+            return IntersectionUtils.DoesOverlap(LowerBound, UpperBound, ref ray, invD);
         }
     }
 
