@@ -72,7 +72,7 @@ namespace NativeBVH {
             ray.direction = math.rotate(inverse, ray.direction);
             
             // And cast the ray on the collider
-            return leaf.collider.CastRay(ray);
+            return leaf.collider.RayQuery(ray);
         }
     }
 }

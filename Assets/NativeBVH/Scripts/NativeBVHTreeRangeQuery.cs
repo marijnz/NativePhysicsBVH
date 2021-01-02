@@ -10,6 +10,7 @@ namespace NativeBVH {
             public uint layerMask;
         }
         
+        // TODO: make SIMD
         public void DistanceQuery(DistanceQueryInput query, NativeList<int> results) {
             float maxDistanceSqrd = query.maxDistance * query.maxDistance;
 
@@ -21,13 +22,12 @@ namespace NativeBVH {
                 var index = stack[--top];
                 var node = nodes[index];
 
-                // TODO: make SIMD
-                if (!IntersectionUtils.IsInRange(ref node->box, query.origin, maxDistanceSqrd)) {
+                if (!IntersectionUtils.IsInRange(node->box.LowerBound, node->box.UpperBound, query.origin, maxDistanceSqrd)) {
                     continue;
                 }
 
                 if (node->isLeaf) {
-                    if ((query.layerMask & node->leaf.layer) == 0 /*TODO: distance check on primitive*/) {
+                    if ((query.layerMask & node->leaf.layer) == 0 && DoDistanceQuery(query, ref node->leaf)) {
                         results.Add(index);
                     } 
                 } else {
@@ -35,6 +35,15 @@ namespace NativeBVH {
                     stack[top++] = node->child2;
                 }
             }
+        }
+        
+        private bool DoDistanceQuery(DistanceQueryInput query, ref Leaf leaf) {
+            // Translate distance query into node space
+            var inverse = math.inverse(leaf.transform);
+            query.origin = math.transform(inverse, query.origin); 
+            
+            // And cast the ray on the collider
+            return leaf.collider.DistanceQuery(query);
         }
     }
 }

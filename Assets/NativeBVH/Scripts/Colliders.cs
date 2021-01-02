@@ -14,13 +14,28 @@ namespace NativeBVH {
         // Inlining primitive data
         public fixed byte data[24];
 
-        public bool CastRay(NativeBVHTree.Ray ray) {
+        public bool RayQuery(NativeBVHTree.Ray ray) {
             fixed (Collider* target = &this) {
                 switch (type) {
                     case Type.Box:
-                        return ((BoxCollider*) target->data)->CastRay(ray);
+                        return ((BoxCollider*) target->data)->RayQuery(ray);
                     case Type.Sphere:
-                        return ((SphereCollider*) target->data)->CastRay(ray);
+                        return ((SphereCollider*) target->data)->RayQuery(ray);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                    default:
+                        throw new ArgumentOutOfRangeException();
+#endif
+                }
+            }
+        }
+        
+        public bool DistanceQuery(NativeBVHTree.DistanceQueryInput query) {
+            fixed (Collider* target = &this) {
+                switch (type) {
+                    case Type.Box:
+                        return ((BoxCollider*) target->data)->DistanceQuery(query);
+                    case Type.Sphere:
+                        return ((SphereCollider*) target->data)->DistanceQuery(query);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -96,9 +111,13 @@ namespace NativeBVH {
             };
         }
 
-        public bool CastRay(NativeBVHTree.Ray ray) {
+        public bool RayQuery(NativeBVHTree.Ray ray) {
             var invD = 1 / ray.direction;
             return IntersectionUtils.DoesOverlap(LowerBound, UpperBound, ref ray, invD);
+        }
+        
+        public bool DistanceQuery(NativeBVHTree.DistanceQueryInput query) {
+            return IntersectionUtils.IsInRange(LowerBound, UpperBound, query.origin, query.maxDistance);
         }
     }
 
@@ -123,7 +142,7 @@ namespace NativeBVH {
         /// <summary>
         /// Per: Christer Ericson - Real-Time Collision Detection (p. 179)
         /// </summary>
-        public bool CastRay(NativeBVHTree.Ray ray) {
+        public bool RayQuery(NativeBVHTree.Ray ray) {
             var m = ray.origin - center;
             var c = math.dot(m, m) - radius * radius;
             // If there is definitely at least one real root, there must be an intersection
@@ -142,6 +161,10 @@ namespace NativeBVH {
             }
             // Now ray must hit sphere
             return true;
+        }
+        
+        public bool DistanceQuery(NativeBVHTree.DistanceQueryInput query) {
+            return math.distance(query.origin, center) - radius < query.maxDistance;
         }
     }
 }

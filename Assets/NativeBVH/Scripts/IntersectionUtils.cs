@@ -10,8 +10,8 @@ namespace NativeBVH {
             return IntersectTest(box.LowerBound, box.UpperBound,ray.origin, ray.minDistance, ray.maxDistance, invD, out _);
         }
         
-        public static bool IsInRange(ref AABB3D box, float3 point, float maxDistanceSqrd) {
-            var c = math.max(math.min(point, box.UpperBound), box.LowerBound);
+        public static bool IsInRange(float3 boxMin, float3 boxMax, float3 point, float maxDistanceSqrd) {
+            var c = math.max(math.min(point,boxMax), boxMin);
             var d = math.distancesq(c, point);
             return d < maxDistanceSqrd;
         }
