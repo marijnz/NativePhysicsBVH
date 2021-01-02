@@ -1,75 +1,58 @@
-﻿using System;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
+﻿using UnityEngine;
 
 namespace NativeBVH {
     /// <summary>
     /// Simple min-heap.
-    /// TODO: Dynamic resizing
     /// </summary>
-    public unsafe struct UnsafeMinHeap : IDisposable {
+    public unsafe static class UnsafeMinHeap {
+
+        public struct MinHeap {
+            public HeapItem* heap;
+            public int count;
+        }
+        
         public struct HeapItem {
             public int Id;
             public float Cost;
         }
         
-        public UnsafeMinHeap(int initialCapacity = 64, Allocator allocator = Allocator.Temp) : this() {
-            heap = new NativeArray<HeapItem>(initialCapacity, allocator);
-        }
-
-        public int Count { get; set; }
-        private NativeArray<HeapItem> heap;
-        
-        public void Push(HeapItem v) {
-            if (Count >= heap.Length-1) {
-                throw new InvalidOperationException();
-            }
+        public static void Push(ref MinHeap minHeap, HeapItem v) {
             // Usually this would be the place so increase size of heap if needed, but it's pre-allocated.
-            heap[Count] = v;
-            SiftUp(Count++);
+            minHeap.heap[minHeap.count] = v;
+            SiftUp(ref minHeap, minHeap.count++);
         }
 
-        public HeapItem Pop() {
-            var v = Top();
-            heap[0] = heap[--Count];
-            if (Count > 0) SiftDown(0);
+        public static HeapItem Pop(ref MinHeap minHeap) {
+            var v = Top(ref minHeap);
+            minHeap.heap[0] = minHeap.heap[--minHeap.count];
+            if (minHeap.count > 0) SiftDown(ref minHeap, 0);
             return v;
         }
 
-        public HeapItem Top() {
-            return heap[0];
+        public static HeapItem Top(ref MinHeap minHeap) {
+            return minHeap.heap[0];
         }
 
-        public void Clear() {
-            UnsafeUtility.MemClear(heap.GetUnsafePtr(), sizeof(HeapItem) * Count);
-        }
-
-        void SiftUp(int n) {
-            var v = heap[n];
-            for (var n2 = n / 2; n > 0 && CompareCost(v, heap[n2]) > 0; n = n2, n2 /= 2) heap[n] = heap[n2];
-            heap[n] = v;
+        static void SiftUp(ref MinHeap minHeap, int n) {
+            var v = minHeap.heap[n];
+            for (var n2 = n / 2; n > 0 && CompareCost(v, minHeap.heap[n2]) > 0; n = n2, n2 /= 2) minHeap.heap[n] = minHeap.heap[n2];
+            minHeap.heap[n] = v;
         }
         
-        void SiftDown(int n) {
-            var v = heap[n];
-            for (var n2 = n * 2; n2 < Count; n = n2, n2 *= 2) {
-                if (n2 + 1 < Count && CompareCost(heap[n2 + 1], heap[n2]) > 0) n2++;
-                if (CompareCost(v, heap[n2]) >= 0) break;
-                heap[n] = heap[n2];
+        static void SiftDown(ref MinHeap minHeap, int n) {
+            var v = minHeap.heap[n];
+            for (var n2 = n * 2; n2 < minHeap.count; n = n2, n2 *= 2) {
+                if (n2 + 1 < minHeap.count && CompareCost(minHeap.heap[n2 + 1], minHeap.heap[n2]) > 0) n2++;
+                if (CompareCost(v, minHeap.heap[n2]) >= 0) break;
+                minHeap.heap[n] = minHeap.heap[n2];
             }
-            heap[n] = v;
+            minHeap.heap[n] = v;
         }
 
-        int CompareCost(HeapItem a, HeapItem b) {
+        static int CompareCost(HeapItem a, HeapItem b) {
             if(a.Cost < b.Cost) return 1;
             if(a.Cost > b.Cost) return -1;
             return 0;
-        }
-
-        public void Dispose() {
-            if (heap.IsCreated) {
-                heap.Dispose();
-            }
         }
     }
 }
