@@ -79,4 +79,8 @@ world.UpdateTransform(index, new RigidTransform {pos = new float3(1, 1, 1)});
 // And update the BVH (once per frame)
 world.Update();
 ```
+### Debugging
 
+There's a debug scene, select the debug drawer in it to see the results of the last ran test.
+
+![](https://i.imgur.com/4R6ygoZ.png)
