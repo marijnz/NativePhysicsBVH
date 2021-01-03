@@ -1,7 +1,7 @@
 {
-  "name": "com.marijnzwemmer.unity-toolbar-extender",
+  "name": "com.marijnzwemmer.unity-native-physics-bvh",
   "version": "1.0.0",
-  "displayName": "Native Physics BVH",
+  "displayName": "Unity Native Physics BVH",
   "description": "A Bounding Volume Hierarchy with basic physics queries for Unity DOTS.",
   "unity": "2020.1",
   "dependencies": {},
