@@ -1,0 +1,21 @@
+{
+  "name": "com.marijnzwemmer.unity-toolbar-extender",
+  "version": "1.0.0",
+  "displayName": "Native Physics BVH",
+  "description": "A Bounding Volume Hierarchy with basic physics queries for Unity DOTS.",
+  "unity": "2020.1",
+  "dependencies": {},
+  "keywords": [
+    "unity",
+    "physics",
+    "bvh",
+    "raycast",
+    "burst",
+    "dots"
+  ],
+  "author": {
+    "name": "Marijn Zwemmer",
+    "email": "marijn@marijnzwemmer.com",
+    "url": "https://github.com/marijnz/NativePhysicsBVH"
+  }
+}
