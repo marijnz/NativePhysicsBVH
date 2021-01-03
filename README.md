@@ -84,3 +84,11 @@ world.Update();
 There's a debug scene, select the debug drawer in it to see the results of the last ran test.
 
 ![](https://i.imgur.com/4R6ygoZ.png)
+
+
+### To do
+- Ensure thread safety by adding checks, there are none currently
+- Support more primitives such as cylinders and capsules 
+- Have more queries and expand existing queries to return more hit data
+- Optimize the Distance query with SIMD operations
+- Improve the performance comparison with Unity.Physics
