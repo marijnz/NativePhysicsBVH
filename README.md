@@ -7,9 +7,16 @@ A Bounding Volume Hierarchy with basic physics queries for Unity DOTS.
 
 Even though there's reasonable test coverage, this shouldn't be used in a production environment yet and is likely to have critical bugs. Use with caution!
 
+### Performance
+With a world of 1500 bodies, the insertion takes ~2ms and 10k raycasts take ~8ms. A similar setup with Unity.Physics takes ~0.2ms for the insertion and ~17ms for the raycasts. The time difference in insertion is largely because of the different construction of the world. In this project the BVH insertion is done with an "Incremental" approach, Unity.Physics seemingly "Top Down".
+
+This means that this project is generally better for many static objects and not tens of thousands of moving objects. However, thousends of moving moving objects should still be fine, especially when increasing the bounds of objects a bit so the tree doesn't have to update constantly (see `BVHWorld` as an example for this).
+
+Tests are done with an Intel i7-10750H CPU @ 2.60GHza.
+
 ### Examples
 
-The tests are a good place to see how the tree is being used. But here's some examples as well.
+The tests are a good place to see how to use the BVH. But here's some examples as well.
 
 #### Insertion
 
@@ -91,4 +98,6 @@ There's a debug scene, select the debug drawer in it to see the results of the l
 - Support more primitives such as cylinders and capsules 
 - Have more queries and expand existing queries to return more hit data
 - Optimize the Distance query with SIMD operations
+- BVHWorld: Increase bounds of moving objects based on collider size and tranform velocity
+- BVHWorld: Separate dynamic and static bodies
 - Improve the performance comparison with Unity.Physics
