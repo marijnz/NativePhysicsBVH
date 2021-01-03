@@ -249,6 +249,18 @@ namespace NativeBVH {
         public int DebugGetRootNodeIndex() {
             return rootIndex.IsCreated ? rootIndex[0] : 0;
         }
+
+        public void DebugGetAllChildren(int index, NativeList<int> indices, bool leavesOnly = false) {
+            if (index != InvalidNode) {
+                var node = nodes[index];
+                if (node->isLeaf || !leavesOnly) {
+                    indices.Add(index);
+                }
+                
+                DebugGetAllChildren(node->child2, indices, leavesOnly);
+                DebugGetAllChildren(node->child1, indices, leavesOnly);
+            }
+        }
         
         public Node DebugGetNode(int index) {
             return *nodes[index];

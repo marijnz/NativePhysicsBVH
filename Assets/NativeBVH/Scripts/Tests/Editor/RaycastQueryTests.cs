@@ -6,7 +6,7 @@ using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
 
 namespace NativeBVH.Editor {
-    public class NativeBVHTests {
+    public class RaycastQueryTests {
 
         [SetUp]
         public void Setup() {
@@ -18,34 +18,6 @@ namespace NativeBVH.Editor {
             NativeBVHDebugDrawer.LastRay = default;
         }
 
-        
-        [Test]
-        public void TestManyBoxes() {
-            // Random boxes in a 3d space
-            var tree = new NativeBVHTree(64, Allocator.Persistent);
-            for (int i = 0; i < 20; i++) {
-                var lower = new float3(UnityEngine.Random.Range(0, 30), UnityEngine.Random.Range(0, 30),  UnityEngine.Random.Range(0, 30));
-                var upper = lower + new float3(UnityEngine.Random.Range(5, 20), UnityEngine.Random.Range(5, 20), UnityEngine.Random.Range(5, 20));
-                tree.InsertLeaf(BoxCollider.Create(lower, upper));
-            }
-            
-            // Debug
-            NativeBVHDebugDrawer.LastTree = tree;
-        }
-        
-        [Test]
-        public void TestForest() {
-            // Create a "forest", many boxes with a y-position of 0
-            var tree = new NativeBVHTree(64, Allocator.Persistent);
-            for (int i = 0; i < 50; i++) {
-                var pos =  new float3(UnityEngine.Random.Range(0, 200), 0,UnityEngine.Random.Range(0, 200));
-                tree.InsertLeaf(BoxCollider.Create(pos, pos + new float3(1,2,1)));
-            }
-            
-            // Debug
-            NativeBVHDebugDrawer.LastTree = tree;
-        }
-        
         [Test]
         public void TestRayTwoBoxes() {
             // Insertion
@@ -71,136 +43,7 @@ namespace NativeBVH.Editor {
             // Assert
             Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
         }
-        
-        [Test]
-        public void TestDistanceTwoBoxes() {
-            // Insertion
-            var tree = new NativeBVHTree(64, Allocator.Persistent);
-            int expectedIndex = tree.InsertLeaf(BoxCollider.Create(new float3(0, 1, 0), new float3(2, 2, 2)));
-            tree.InsertLeaf(BoxCollider.Create(new float3(0, 1.2f, 0), new float3(2, 2, 2)));
-            
-            // Distance query
-            var rayResult = new NativeList<int>(64, Allocator.Temp);
-            var query = new NativeBVHTree.DistanceQueryInput {
-                origin = new float3(0, -1, 0),
-                maxDistance = 1.1f
-            };
-            tree.DistanceQuery(query, rayResult);
-            
-            // Debug
-            NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
-            
-            // Assert
-            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
-            Assert.AreEqual(expectedIndex, rayResult[0], "Expected nearer box to be the result");
-        }
-        
-        [Test]
-        public void TestDistanceTwoSpheres() {
-            // Insertion
-            var tree = new NativeBVHTree(64, Allocator.Persistent);
-            int expectedIndex = tree.InsertLeaf(SphereCollider.Create(new float3(0, 2, 0), 2));
-            tree.InsertLeaf(SphereCollider.Create(new float3(0, 5, 0), 2));
-            
-            // Distance query
-            var rayResult = new NativeList<int>(64, Allocator.Temp);
-            var query = new NativeBVHTree.DistanceQueryInput {
-                origin = new float3(0, -1, 0),
-                maxDistance = 3f
-            };
-            tree.DistanceQuery(query, rayResult);
-            
-            // Debug
-            NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
-            
-            // Assert
-            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
-            Assert.AreEqual(expectedIndex, rayResult[0], "Expected nearer sphere to be the result");
-        }
-        
-        [Test]
-        public void TestDistanceTwoBoxesWithTransformPosition() {
-            // Insertion
-            var tree = new NativeBVHTree(64, Allocator.Persistent);
-            var transform = RigidTransform.identity;
-            transform.pos = new float3(10, 1, 0);
-            var expectedIndex = tree.InsertLeaf(BoxCollider.Create(new float3(-10, 0, 0), new float3(2, 2, 2)), transform);
-            tree.InsertLeaf(BoxCollider.Create(new float3(-10, 0, 0), new float3(2, 2, 2)));
-            
-            // Distance query
-            var rayResult = new NativeList<int>(64, Allocator.Temp);
-            var query = new NativeBVHTree.DistanceQueryInput {
-                origin = new float3(0, -1, 0),
-                maxDistance = 1.1f
-            };
-            tree.DistanceQuery(query, rayResult);
-            
-            // Debug
-            NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
-            
-            // Assert
-            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
-            Assert.AreEqual(expectedIndex, rayResult[0], "Expected nearer box to be the result");
-        }
-        
-        [Test]
-        public void TestDistanceTwoBoxesWithTransformRotationAroundFarPivot() {
-            // Insertion
-            var tree = new NativeBVHTree(64, Allocator.Persistent);
-            var transform = RigidTransform.identity;
-            transform.rot = quaternion.Euler(0, 0, 180);
-            var expectedIndex = tree.InsertLeaf(BoxCollider.Create(new float3(-10, 0, 0), new float3(2, 2, 2)), transform);
-            tree.InsertLeaf(BoxCollider.Create(new float3(-10, 0, 0), new float3(2, 2, 2)));
-            
-            // Distance query
-            var rayResult = new NativeList<int>(64, Allocator.Temp);
-            var query = new NativeBVHTree.DistanceQueryInput {
-                origin = new float3(7, 7, 0),
-                maxDistance = 2f
-            };
-            tree.DistanceQuery(query, rayResult);
-            
-            // Debug
-            NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
-            
-            // Assert
-            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
-            Assert.AreEqual(expectedIndex, rayResult[0], "Expected rotated box (to top-right) to be the hit");
-        }
-        
-        [Test]
-        public void TestDistanceTwoBoxesWithTransformRotationAroundSelf() {
-            // Insertion
-            var tree = new NativeBVHTree(64, Allocator.Persistent);
-            var transform = RigidTransform.identity;
-            transform.pos = new float3(1, 1, 0);
-            transform.rot = quaternion.Euler(0, 0, 180);
-            tree.InsertLeaf(BoxCollider.Create(new float3(0, 0, 0), new float3(2, 2, 2)), transform);
-            var secondTransform = RigidTransform.identity;
-            secondTransform.pos = new float3(1, 1, 0);
-            var expectedIndex = tree.InsertLeaf(BoxCollider.Create(new float3(0, 0, 0), new float3(2, 2, 2)), secondTransform);
-            
-            // Distance query
-            var rayResult = new NativeList<int>(64, Allocator.Temp);
-            var query = new NativeBVHTree.DistanceQueryInput {
-                origin = new float3(0, 0, 0),
-                maxDistance = 0.1f
-            };
-            tree.DistanceQuery(query, rayResult);
-            
-            // Debug
-            NativeBVHDebugDrawer.LastTree = tree;
-            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
-            
-            // Assert
-            Assert.AreEqual(1, rayResult.Length, "Expected only one hit");
-            Assert.AreEqual(expectedIndex, rayResult[0], "Expected non-rotated box to be the hit");
-        }
-        
+
         [Test]
         public void TestRayTwoBoxesTransformPosition() {
             // Insertion
@@ -403,14 +246,42 @@ namespace NativeBVH.Editor {
         }
         
         [Test]
+        public void TestRayManySortedBoxes() {
+            // Insertion
+            var tree = new NativeBVHTree(64, Allocator.Persistent);
+            var rayResult = new NativeList<int>(64, Allocator.Temp);
+            for (int i = 0; i < 20; i++) {
+                var boxPos = new float3(3 * i, i * 3, 0);
+                var ray = new NativeBVHTree.Ray {
+                    origin = boxPos - new float3(0,0,5),
+                    direction = new float3(0,0,5),
+                    minDistance = 0,
+                    maxDistance = 20,
+                };
+                tree.InsertLeaf(BoxCollider.Create(boxPos, new float3(1, 1, 1)));
+                tree.RaycastQuery(ray, rayResult);
+                NativeBVHDebugDrawer.LastRay = ray;
+            }
+            
+            // Debug
+            NativeBVHDebugDrawer.LastTree = tree;
+            NativeBVHDebugDrawer.LastTreeHits = rayResult.ToArray();
+
+            // Assert
+            Assert.AreEqual(20, rayResult.Length, "Expected all rays to have hits");
+        }
+        
+        [Test]
         public void TestJobRayRandomManyBoxesAndSpheres() {
-            // pre-warm
+            // Pre-warm
             RunJob(1);
-            // run
-            RunJob(1500);
+            // Run
+            var hits = RunJob(1500);
+            // Assert
+            Assert.AreEqual(5, hits, "Expected 5 hits");
         }
 
-        private void RunJob(int amount) {
+        private int RunJob(int amount) {
             // Insertion
             NativeList<Leaf> leaves = new NativeList<Leaf>(amount, Allocator.TempJob);
             var tree = new NativeBVHTree(5000, Allocator.Persistent);
@@ -462,12 +333,8 @@ namespace NativeBVH.Editor {
                 NativeBVHDebugDrawer.LastTreeRayVisited[i] = true;
             }
             NativeBVHDebugDrawer.LastRay = ray;
-        }
-        
-        [Test]
-        public void TestCreateBoxCollider() {
-            var collider = BoxCollider.Create(new float3(1, 1, 1), new float3(2, 2, 2));
-            collider.RayQuery(new NativeBVHTree.Ray {direction = new float3(2, 2, 2)});
+
+            return rayResult.Length;
         }
     }
 }
