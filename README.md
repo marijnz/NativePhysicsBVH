@@ -94,6 +94,7 @@ There's a debug scene, select the debug drawer in it to see the results of the l
 
 
 ### To do
+- Write more tests for edge-cases (such as thousands of objects at the same position)
 - Ensure thread safety by adding checks, there are none currently
 - Support more primitives such as cylinders and capsules 
 - Have more queries and expand existing queries to return more hit data
