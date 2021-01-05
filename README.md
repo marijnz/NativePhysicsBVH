@@ -12,7 +12,7 @@ With a world of 1500 bodies, the insertion takes ~2ms and 10k raycasts take ~8ms
 
 This means that this project is generally better for many static objects and not tens of thousands of moving objects. However, thousends of moving moving objects should still be fine, especially when increasing the bounds of objects a bit so the tree doesn't have to update constantly (see `BVHWorld` as an example for this).
 
-Tests are done with an Intel i7-10750H CPU @ 2.60GHza.
+Tests are done with an Intel i7-10750H CPU @ 2.60GHz.
 
 ### Examples
 
