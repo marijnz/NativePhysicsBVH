@@ -21,7 +21,7 @@ namespace NativeBVH {
                 return;
             }
             
-            var stack = stackalloc int[TreeTraversalStackSize];
+            var stack = stackalloc int[256];
             stack[0] = rootIndex[0];
             var top = 1;
             

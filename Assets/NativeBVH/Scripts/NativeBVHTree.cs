@@ -37,7 +37,6 @@ namespace NativeBVH {
         }
         
         public const int InvalidNode = 0;
-        public const int TreeTraversalStackSize = 256;
         
         [NativeDisableUnsafePtrRestriction]
         private UnsafeNodesList* nodesList;
@@ -47,6 +46,8 @@ namespace NativeBVH {
         
         private NativeArray<int> rootIndex;
         
+        private UnsafeMinHeap insertionHeap;
+
         private Configuration config;
 
         public NativeBVHTree(int initialCapacity = 64, Allocator allocator = Allocator.Temp, Configuration config = default) : this() {
@@ -56,6 +57,8 @@ namespace NativeBVH {
 
             // Create invalid node (at index 0)
             AllocInternalNode();
+
+            insertionHeap = new UnsafeMinHeap(initialCapacity, allocator);
 
             this.config = config;
         }
@@ -80,17 +83,10 @@ namespace NativeBVH {
             // Stage 1: find the best sibling for the new leaf
             float bestCost = float.MaxValue;
             int bestIndex = -1;
+            insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = rootIndex[0], Cost = 0});
 
-            var heap = stackalloc UnsafeMinHeap.HeapItem[TreeTraversalStackSize];
-            var insertionHeap = new UnsafeMinHeap.MinHeap {
-                count = 0,
-                heap = heap,
-            };
-            
-            UnsafeMinHeap.Push(ref insertionHeap, new UnsafeMinHeap.HeapItem {Id = rootIndex[0], Cost = 0});
-            
-            while (insertionHeap.count != 0) {
-                var heapItem = UnsafeMinHeap.Pop(ref insertionHeap);
+            while (insertionHeap.Count != 0) {
+                var heapItem = insertionHeap.Pop();
                 var node = nodes[heapItem.Id];
     
                 var union = node->box.Union(bounds);
@@ -109,10 +105,10 @@ namespace NativeBVH {
 
                 if (lowerBoundChildrenCost < bestCost) {
                     if (node->child1 != InvalidNode) {
-                        UnsafeMinHeap.Push(ref insertionHeap, new UnsafeMinHeap.HeapItem {Id = node->child1, Cost = totalInheritedCost});
+                        insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = node->child1, Cost = totalInheritedCost});
                     }
                     if (node->child2 != InvalidNode) {
-                        UnsafeMinHeap.Push(ref insertionHeap, new UnsafeMinHeap.HeapItem {Id = node->child2, Cost = totalInheritedCost});
+                        insertionHeap.Push(new UnsafeMinHeap.HeapItem {Id = node->child2, Cost = totalInheritedCost});
                     }
                 }
             }
@@ -243,6 +239,7 @@ namespace NativeBVH {
         public void Dispose() {
             UnsafeNodesList.Destroy(nodesList);
             nodesList = null;
+            insertionHeap.Dispose();
             rootIndex.Dispose();
         }
 
