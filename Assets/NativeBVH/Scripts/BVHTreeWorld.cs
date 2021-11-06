@@ -15,27 +15,18 @@ namespace NativeBVH {
             public AABB3D expandedBounds;
         }
 
-        public NativeArray<Body> bodies;
+        public NativeList<Body> bodies;
         public NativeBVHTree tree;
-
-        private Allocator allocator;
         
         public BVHTreeWorld(int initialCapacity = 64, Allocator allocator = Allocator.Temp) : this() {
             tree = new NativeBVHTree(initialCapacity, allocator, new NativeBVHTree.Configuration { BoundsExpansion = ExpandSize});
-            bodies = new NativeArray<Body>(initialCapacity, allocator);
-            this.allocator = allocator;
+            bodies = new NativeList<Body>(initialCapacity, allocator); 
         }
 
         public int Add(Collider collider) {
             var index = tree.InsertLeaf(collider);
-            if (bodies.Length < tree.nodes.length) {
-                var arr = new NativeArray<Body>(tree.nodes.length, allocator);
-                NativeArray<Body>.Copy(bodies, arr, bodies.Length);
-                bodies.Dispose();
-                bodies = arr;
-            }
-            bodies[index] = new Body {nodeId = index, collider = collider};
-            return index;
+            bodies.Add(new Body {nodeId = index, collider = collider});
+            return bodies.Length-1;
         }
         
         public void UpdateTransform(int index, RigidTransform transform) {
@@ -56,7 +47,7 @@ namespace NativeBVH {
         [BurstCompile]
         public struct UpdateWorldJob : IJob {
             public NativeBVHTree Tree;
-            public NativeArray<Body> Bodies;
+            public NativeList<Body> Bodies;
 
             public void Execute() {
                 for (var i = 0; i < Bodies.Length; i++) {
@@ -74,15 +65,32 @@ namespace NativeBVH {
         }
         
         [BurstCompile]
-        public struct InsertJob : IJob {
+        public struct InsertCollidersJob : IJob {
             public NativeBVHTree Tree;
-            public NativeArray<Body> Bodies;
+            public NativeList<Body> Bodies;
             [ReadOnly] public NativeArray<Collider> Colliders;
 
             public void Execute() {
                 for (var i = 0; i < Colliders.Length; i++) {
                     var index = Tree.InsertLeaf(Colliders[i]);
                     Bodies[index] = new Body {nodeId = index, collider = Colliders[i]};
+                }
+            }
+        }
+        
+        [BurstCompile]
+        public struct InsertCollidersAndTransformsJob : IJob {
+            public NativeBVHTree Tree;
+            public NativeList<Body> Bodies;
+            [ReadOnly] public NativeArray<Collider> Colliders;
+            [ReadOnly] public NativeArray<RigidTransform> Transforms;
+
+            public void Execute() {
+                for (var i = 0; i < Colliders.Length; i++) {
+                    var index = Tree.InsertLeaf(Colliders[i], Transforms[i]);
+                    var bounds = Colliders[i].CalculateBounds(Transforms[i]);
+                    bounds.Expand(ExpandSize);
+                    Bodies.Add(new Body {nodeId = index, collider = Colliders[i], transform = Transforms[i], expandedBounds = bounds});
                 }
             }
         }

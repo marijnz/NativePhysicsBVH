@@ -14,7 +14,7 @@ namespace NativeBVH {
         public void DistanceQuery(DistanceQueryInput query, NativeList<int> results) {
             float maxDistanceSqrd = query.maxDistance * query.maxDistance;
 
-            var stack = stackalloc int[TreeTraversalStackSize];
+            var stack = stackalloc int[256];
             stack[0] = rootIndex[0];
             var top = 1;
             

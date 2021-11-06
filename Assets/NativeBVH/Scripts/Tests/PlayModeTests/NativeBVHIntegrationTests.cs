@@ -43,13 +43,13 @@ namespace NativeBVH {
                 colliders.Add(SphereCollider.Create(center, UnityEngine.Random.Range(10, 15)));
             }
             
-            new BVHTreeWorld.InsertJob {
+            new BVHTreeWorld.InsertCollidersJob {
                 Tree = world.tree,
-                Bodies = new NativeArray<BVHTreeWorld.Body>(0, Allocator.TempJob),
+                Bodies = new NativeList<BVHTreeWorld.Body>(0, Allocator.TempJob),
                 Colliders = new NativeList<Collider>(0, Allocator.TempJob),
             }.Run();
             
-            new BVHTreeWorld.InsertJob {
+            new BVHTreeWorld.InsertCollidersJob {
                 Tree = world.tree,
                 Bodies = world.bodies,
                 Colliders = colliders,

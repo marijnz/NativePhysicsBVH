@@ -27,20 +27,27 @@ namespace NativeBVH {
             DoTest();
         }
 
-        public void DoTest() {
+        private void DoTest() {
             var amount = PerformanceComparisonConfig.ObjectCount;
             var world = new BVHTreeWorld(amount, Allocator.Persistent);
 
             Random.InitState(0);
+            var colliders = new NativeArray<Collider>(amount, Allocator.TempJob);
+            var transforms = new NativeArray<RigidTransform>(amount, Allocator.TempJob);
             for (int i = 0; i < PerformanceComparisonConfig.ObjectCount; i++) {
-                var collider = BoxCollider.Create(float3.zero, PerformanceComparisonConfig.GetRandomSize());
-                int index = world.Add(collider);
-                world.UpdateTransform(index, new RigidTransform(quaternion.identity, PerformanceComparisonConfig.GetRandomPosition()));
+                colliders[i] = BoxCollider.Create(float3.zero, PerformanceComparisonConfig.GetRandomSize());
+                transforms[i] = new RigidTransform(quaternion.identity, PerformanceComparisonConfig.GetRandomPosition());
             }
+           
             
             var s = Stopwatch.StartNew();
             Profiler.BeginSample("broad");
-            world.Update();
+            new BVHTreeWorld.InsertCollidersAndTransformsJob {
+                Tree = world.tree,
+                Bodies = world.bodies,
+                Colliders = colliders,
+                Transforms = transforms
+            }.Run();
             Profiler.EndSample();
             if(enableLog) Debug.Log("Building broad phase took: " + s.Elapsed.TotalMilliseconds);
 
