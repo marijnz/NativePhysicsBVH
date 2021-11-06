@@ -15,17 +15,26 @@ namespace NativeBVH {
             public AABB3D expandedBounds;
         }
 
-        public NativeList<Body> bodies;
+        public NativeArray<Body> bodies;
         public NativeBVHTree tree;
+
+        private Allocator allocator;
         
         public BVHTreeWorld(int initialCapacity = 64, Allocator allocator = Allocator.Temp) : this() {
             tree = new NativeBVHTree(initialCapacity, allocator, new NativeBVHTree.Configuration { BoundsExpansion = ExpandSize});
-            bodies = new NativeList<Body>(initialCapacity, allocator);
+            bodies = new NativeArray<Body>(initialCapacity, allocator);
+            this.allocator = allocator;
         }
 
         public int Add(Collider collider) {
             var index = tree.InsertLeaf(collider);
-            bodies.Add(new Body {nodeId = index, collider = collider});
+            if (bodies.Length < tree.nodes.length) {
+                var arr = new NativeArray<Body>(tree.nodes.length, allocator);
+                NativeArray<Body>.Copy(bodies, arr, bodies.Length);
+                bodies.Dispose();
+                bodies = arr;
+            }
+            bodies[index] = new Body {nodeId = index, collider = collider};
             return index;
         }
         
@@ -47,7 +56,7 @@ namespace NativeBVH {
         [BurstCompile]
         public struct UpdateWorldJob : IJob {
             public NativeBVHTree Tree;
-            public NativeList<Body> Bodies;
+            public NativeArray<Body> Bodies;
 
             public void Execute() {
                 for (var i = 0; i < Bodies.Length; i++) {
@@ -67,13 +76,13 @@ namespace NativeBVH {
         [BurstCompile]
         public struct InsertJob : IJob {
             public NativeBVHTree Tree;
-            public NativeList<Body> Bodies;
+            public NativeArray<Body> Bodies;
             [ReadOnly] public NativeArray<Collider> Colliders;
 
             public void Execute() {
                 for (var i = 0; i < Colliders.Length; i++) {
                     var index = Tree.InsertLeaf(Colliders[i]);
-                    Bodies.Add(new Body {nodeId = index, collider = Colliders[i]});
+                    Bodies[index] = new Body {nodeId = index, collider = Colliders[i]};
                 }
             }
         }

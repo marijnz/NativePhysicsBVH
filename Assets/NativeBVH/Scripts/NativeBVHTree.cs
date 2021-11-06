@@ -92,7 +92,7 @@ namespace NativeBVH {
             while (insertionHeap.count != 0) {
                 var heapItem = UnsafeMinHeap.Pop(ref insertionHeap);
                 var node = nodes[heapItem.Id];
-
+    
                 var union = node->box.Union(bounds);
                 var directCost = union.Area();
                 var cost = directCost + heapItem.Cost;

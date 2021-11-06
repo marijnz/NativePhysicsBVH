@@ -45,7 +45,7 @@ namespace NativeBVH {
             
             new BVHTreeWorld.InsertJob {
                 Tree = world.tree,
-                Bodies = new NativeList<BVHTreeWorld.Body>(0, Allocator.TempJob),
+                Bodies = new NativeArray<BVHTreeWorld.Body>(0, Allocator.TempJob),
                 Colliders = new NativeList<Collider>(0, Allocator.TempJob),
             }.Run();
             
