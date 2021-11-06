@@ -53,8 +53,8 @@ namespace NativeBVH {
 
             var rayResult = new NativeList<int>(64, Allocator.TempJob);
 
-            var start = new float3(-10, -10, 0);
-            var end = new float3(500, 500, 500);
+            var start = PerformanceComparisonConfig.RayStart;
+            var end = PerformanceComparisonConfig.RayEnd;
             
             var rayJob = new RayJob {
                 Tree = world.tree,
@@ -74,11 +74,11 @@ namespace NativeBVH {
             world.Update();
             if(enableLog) Debug.Log("Building broad phase again after no changes took: " + s.Elapsed.TotalMilliseconds);
             
-            s.Restart();
             for (int i = 0; i < 100; i++) {
                 int randomIndex = Random.Range(1, PerformanceComparisonConfig.ObjectCount);
                 world.UpdateTransform(randomIndex, new RigidTransform(quaternion.identity, PerformanceComparisonConfig.GetRandomPosition()));
             }
+            s.Restart();
             world.Update();
             if(enableLog) Debug.Log("Building broad phase again after some changes took: " + s.Elapsed.TotalMilliseconds);
         }

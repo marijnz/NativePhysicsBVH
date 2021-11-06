@@ -37,7 +37,7 @@ namespace NativeBVH {
                     Center = default,
                     Size = PerformanceComparisonConfig.GetRandomSize(),
                     Orientation = quaternion.identity,
-                    BevelRadius = 0.1f
+                    BevelRadius = 0
                 });
                 
                 var bodies = world.DynamicBodies;
@@ -58,8 +58,8 @@ namespace NativeBVH {
             var rayJob = new RayJob {
                 CollisionWorld = world.CollisionWorld,
                 RayInput = new RaycastInput {
-                    Start = new float3(-10, -10, 0),
-                    End = new float3(500, 500, 500),
+                    Start = PerformanceComparisonConfig.RayStart,
+                    End = PerformanceComparisonConfig.RayEnd,
                     Filter = CollisionFilter.Default
                 },
                 Results = rayResult
