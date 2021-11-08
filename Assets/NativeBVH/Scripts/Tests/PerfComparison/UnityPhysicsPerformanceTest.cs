@@ -50,7 +50,8 @@ namespace NativeBVH {
             
             var s = Stopwatch.StartNew();
             Profiler.BeginSample("broad");
-            new BuildWorldJob {PhysicsWorld = world}.Run();
+            world.CollisionWorld.ScheduleBuildBroadphaseJobs(ref world, 1, float3.zero,
+                new NativeArray<int>(1, Allocator.TempJob), default, 8).Complete();
             Profiler.EndSample();
             if(enableLog) Debug.Log("Building broad phase took: " + s.Elapsed.TotalMilliseconds);
 
@@ -79,7 +80,7 @@ namespace NativeBVH {
         public struct BuildWorldJob : IJob {
             public PhysicsWorld PhysicsWorld;
             public void Execute() {
-                PhysicsWorld.CollisionWorld.BuildBroadphase(ref PhysicsWorld, 1, -9.81f * math.up());
+                PhysicsWorld.CollisionWorld.BuildBroadphase(ref PhysicsWorld, 1, float3.zero);
             }
         }
 

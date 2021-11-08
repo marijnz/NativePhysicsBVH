@@ -50,37 +50,15 @@ namespace NativeBVH {
             }.Run();
             Profiler.EndSample();
             if(enableLog) Debug.Log("Building broad phase took: " + s.Elapsed.TotalMilliseconds);
-
-            var rayResult = new NativeList<int>(64, Allocator.TempJob);
-
-            var start = PerformanceComparisonConfig.RayStart;
-            var end = PerformanceComparisonConfig.RayEnd;
-            
-            var rayJob = new RayJob {
-                Tree = world.tree,
-                RayInput = new NativeBVHTree.Ray {
-                    origin = start,
-                    direction = math.normalize(end-start),
-                    maxDistance = math.distance(start, end),
-                },
-                Results = rayResult
-            };
-
-            s.Restart();
-            rayJob.Run();
-            if(enableLog) Debug.Log("Raycasts took: " + s.Elapsed.TotalMilliseconds + " results: " + rayResult.Length);
             
             s.Restart();
-            world.Update();
-            if(enableLog) Debug.Log("Building broad phase again after no changes took: " + s.Elapsed.TotalMilliseconds);
-            
-            for (int i = 0; i < 100; i++) {
-                int randomIndex = Random.Range(1, PerformanceComparisonConfig.ObjectCount);
-                world.UpdateTransform(randomIndex, new RigidTransform(quaternion.identity, PerformanceComparisonConfig.GetRandomPosition()));
-            }
-            s.Restart();
-            world.Update();
-            if(enableLog) Debug.Log("Building broad phase again after some changes took: " + s.Elapsed.TotalMilliseconds);
+            var o = new NativeArray<AABB3D>(1, Allocator.TempJob);
+            new BVHTreeWorld.CalculateJob() {
+                Bodies = world.bodies,
+                Output = o
+            }.Run();
+            if(enableLog) Debug.Log("calcjob  took: " + s.Elapsed.TotalMilliseconds);
+            Debug.Log(o[0].LowerBound + " " + o[0].UpperBound);
         }
 
         [BurstCompile]

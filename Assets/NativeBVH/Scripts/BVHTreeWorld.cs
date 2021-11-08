@@ -94,5 +94,50 @@ namespace NativeBVH {
                 }
             }
         }
+        
+        
+        [BurstCompile]
+        public struct CalculateJob : IJob {
+            
+            // https://www.forceflow.be/2013/10/07/morton-encodingdecoding-through-bit-interleaving-implementations/
+            // https://github.com/johnsietsma/InfPoints/blob/master/com.infpoints/Runtime/Morton.cs
+            // http://johnsietsma.com/2019/12/05/morton-order-introduction/
+            // http://graphics.cs.cmu.edu/projects/aac/aac_build.pdf
+            public NativeList<Body> Bodies;
+            public NativeArray<AABB3D> Output;
+
+            public void Execute() {
+                int bits = 4;
+                
+                AABB3D bounds = Bodies.Length >= 1 ? Bodies[1].expandedBounds : new AABB3D();
+
+                for (var j = 0; j < Bodies.Length; j++) {
+                    bounds = bounds.Union(Bodies[j].expandedBounds);
+                }
+                
+                var extents = bounds.Center - bounds.LowerBound;
+                var mult = bits / extents;
+                for (int i = 0; i < Bodies.Length; i++) {
+                    var pos = Bodies[i].expandedBounds.Center;
+                    pos -= bounds.Center; // Offset by center
+                    pos.y = -pos.y; // World -> array
+                    pos = (pos + extents) * .5f; // Make positive // TODO
+                    pos *= mult;
+                    
+                    var m = Morton((uint)pos.x, (uint)pos.y, (uint)pos.z, bits);
+                    bounds.Expand(m);
+                }
+                
+                Output[0] = bounds;
+            }
+            
+            ulong Morton(uint x, uint y, uint z, int bits){
+                uint answer = 0;
+                for (int i = 0; i < (8 * sizeof(uint))/3; ++i) {
+                    answer |= ((x & ((uint)1 << i)) << 2*i) | ((y & ((uint)1 << i)) << (2*i + 1)) | ((z & ((uint)1 << i)) << (2*i + 2));
+                }
+                return answer;
+            }
+        }
     }
 }
