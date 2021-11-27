@@ -6,6 +6,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
+using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.TestTools;
 using Debug = UnityEngine.Debug;
@@ -16,15 +17,19 @@ namespace NativeBVH {
     public class NativeBVHPerfTests {
         private bool enableLog = false;
         
-        [Test]
-        public void CreationAndRaycastPerformanceTest() {
+        [UnityTest]
+        public IEnumerator CreationAndRaycastPerformanceTest() {
             Random.InitState(0);
 
             // Warm-up
-            DoTest();
-            DoTest();
+            //DoTest();
+            //DoTest();
             enableLog = true;
+            yield return null;
             DoTest();
+            while (true) {
+                yield return null;
+            }
         }
 
         private void DoTest() {
@@ -56,7 +61,7 @@ namespace NativeBVH {
             new BVHTreeWorld.CalculateJob() {
                 Bodies = world.bodies,
                 Output = o
-            }.Run();
+            }.Execute();
             if(enableLog) Debug.Log("calcjob  took: " + s.Elapsed.TotalMilliseconds);
             Debug.Log(o[0].LowerBound + " " + o[0].UpperBound);
         }
