@@ -111,13 +111,12 @@ namespace NativeBVH {
             public unsafe void Execute() {
                 int dimensions = 3;
                 
-                // TODO: FIgure out how these relate and minimize space as much as possible
-                int bits = 1;
-                var apart = math.min(bits, 32 / 3);
+                var desiredBits = (int) Mathf.Log(Bodies.Length, 4); // AAC uses a log4 to determine morton bit count 
+                int bits = math.min(desiredBits, 32 / 3);
+                var apart = bits;
                 
                 var fields = 4;
                 
-                // 8, 4, 2, 1
                 var bitFields = stackalloc int[fields];
                 for (int i = 0; i < fields; i++) {
                     bitFields[i] = int.MaxValue;
@@ -161,6 +160,8 @@ namespace NativeBVH {
                 }
                 
                 var maxSpace = math.pow(2, bits);
+
+                var arr = new int[Bodies.Length];
                 
                 var extents = bounds.Center - bounds.LowerBound;
                 var mult = maxSpace / extents;
@@ -173,6 +174,7 @@ namespace NativeBVH {
                     pos *= mult;
                     
                     var m = MortonEncode((int)pos.x, (int)pos.y, (int)pos.z);
+                    arr[i] = m;
                     bounds.Expand(m);
 
                     var p = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -182,8 +184,9 @@ namespace NativeBVH {
                     var tempMaterial = new Material(Shader.Find("Unlit/Color"));
                     tempMaterial.color = Color.Lerp(Color.blue, Color.magenta,  m / math.pow(maxSpace, 3));
                     renderer.sharedMaterial = tempMaterial;
-
                 }
+
+                RadixSort(arr);
                 
                 Output[0] = bounds;
             }
