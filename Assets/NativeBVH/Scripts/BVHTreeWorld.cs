@@ -110,15 +110,22 @@ namespace NativeBVH {
 
             public unsafe void Execute() {
                 int dimensions = 3;
-                int bits = 4;
-                var apart = 8;
-                 
+                
+                // TODO: FIgure out how these relate and minimize space as much as possible
+                int bits = 5;
+                var apart = NextPowerOfTwo((uint) bits);
+                
+                var fields = 4; // NOTE: Could be dynamically lowered as optimization 
+                
                 // 8, 4, 2, 1
-                var bitFields = stackalloc int[4];
+                var bitFields = stackalloc int[fields];
+                for (int i = 0; i < fields; i++) {
+                    bitFields[i] = int.MaxValue;
+                }
 
-                var at = apart;
-                int index = 0;
-                while (at > 0) {
+                var at = 1;
+                int index = fields-1;
+                while (at <= apart) {
                     var bitField = new BitField32();
                     var bitIndex = 0;
                     var written = 0;
@@ -132,8 +139,8 @@ namespace NativeBVH {
                         written += at;
                     }
                   
-                    at /= 2;
-                    bitFields[index++] = (int) bitField.Value;
+                    at *= 2;
+                    bitFields[index--] = (int) bitField.Value;
                 }
 
                 int MortonEncode(int x, int y, int z) {
@@ -178,6 +185,17 @@ namespace NativeBVH {
                 }
                 
                 Output[0] = bounds;
+            }
+
+            private static uint NextPowerOfTwo(uint v) {
+                v--;
+                v |= v >> 1;
+                v |= v >> 2;
+                v |= v >> 4;
+                v |= v >> 8;
+                v |= v >> 16;
+                v++;
+                return v;
             }
             
             ulong Morton(uint x, uint y, uint z, int bits){
