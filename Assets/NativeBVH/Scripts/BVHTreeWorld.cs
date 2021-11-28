@@ -112,10 +112,10 @@ namespace NativeBVH {
                 int dimensions = 3;
                 
                 // TODO: FIgure out how these relate and minimize space as much as possible
-                int bits = 5;
-                var apart = NextPowerOfTwo((uint) bits);
+                int bits = 1;
+                var apart = math.min(bits, 32 / 3);
                 
-                var fields = 4; // NOTE: Could be dynamically lowered as optimization 
+                var fields = 4;
                 
                 // 8, 4, 2, 1
                 var bitFields = stackalloc int[fields];
@@ -169,14 +169,15 @@ namespace NativeBVH {
                     pos -= bounds.Center; // Offset by center
                     //pos.y = -pos.y; // World -> array
                     pos = (pos + extents) * .5f; // Make positive // TODO
+                    var posPreMult = pos;
                     pos *= mult;
                     
                     var m = MortonEncode((int)pos.x, (int)pos.y, (int)pos.z);
                     bounds.Expand(m);
 
                     var p = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-                    p.transform.position = pos;
-                    p.transform.localScale = Vector3.one * .1f;
+                    p.transform.position = posPreMult;
+                    p.transform.localScale = Vector3.one * 1;
                     var renderer = p.GetComponent<MeshRenderer>();
                     var tempMaterial = new Material(Shader.Find("Unlit/Color"));
                     tempMaterial.color = Color.Lerp(Color.blue, Color.magenta,  m / math.pow(maxSpace, 3));
