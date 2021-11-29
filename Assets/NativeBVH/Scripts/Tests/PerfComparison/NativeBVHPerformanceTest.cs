@@ -22,14 +22,14 @@ namespace NativeBVH {
             Random.InitState(0);
 
             // Warm-up
-            //DoTest();
-            //DoTest();
+            DoTest();
+            DoTest();
             enableLog = true;
             yield return null;
             DoTest();
-            while (true) {
-                yield return null;
-            }
+            //while (true) {
+            //    yield return null;
+            //}
         }
 
         private void DoTest() {
@@ -61,7 +61,7 @@ namespace NativeBVH {
             new BVHTreeWorld.CalculateJob() {
                 Bodies = world.bodies,
                 Output = o
-            }.Execute();
+            }.Run();
             if(enableLog) Debug.Log("calcjob  took: " + s.Elapsed.TotalMilliseconds);
             Debug.Log(o[0].LowerBound + " " + o[0].UpperBound);
         }

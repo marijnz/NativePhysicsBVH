@@ -117,6 +117,7 @@ namespace NativeBVH {
                 
                 var fields = 4;
                 
+                // Create morton masks
                 var bitFields = stackalloc int[fields];
                 for (int i = 0; i < fields; i++) {
                     bitFields[i] = int.MaxValue;
@@ -161,7 +162,7 @@ namespace NativeBVH {
                 
                 var maxSpace = math.pow(2, bits);
 
-                var arr = new int[Bodies.Length];
+                var arr = new NativeArray<int>(Bodies.Length, Allocator.Temp);
                 
                 var extents = bounds.Center - bounds.LowerBound;
                 var mult = maxSpace / extents;
@@ -177,60 +178,37 @@ namespace NativeBVH {
                     arr[i] = m;
                     bounds.Expand(m);
 
-                    var p = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-                    p.transform.position = posPreMult;
-                    p.transform.localScale = Vector3.one * 1;
-                    var renderer = p.GetComponent<MeshRenderer>();
-                    var tempMaterial = new Material(Shader.Find("Unlit/Color"));
-                    tempMaterial.color = Color.Lerp(Color.blue, Color.magenta,  m / math.pow(maxSpace, 3));
-                    renderer.sharedMaterial = tempMaterial;
+                    //var p = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                    //p.transform.position = posPreMult;
+                    //p.transform.localScale = Vector3.one * 1;
+                    //var renderer = p.GetComponent<MeshRenderer>();
+                    //var tempMaterial = new Material(Shader.Find("Unlit/Color"));
+                    //tempMaterial.color = Color.Lerp(Color.blue, Color.magenta,  m / math.pow(maxSpace, 3));
+                    //renderer.sharedMaterial = tempMaterial;
                 }
 
-                RadixSort(arr);
+                RadixSort(arr, desiredBits * dimensions);
                 
                 Output[0] = bounds;
             }
-
-            private static uint NextPowerOfTwo(uint v) {
-                v--;
-                v |= v >> 1;
-                v |= v >> 2;
-                v |= v >> 4;
-                v |= v >> 8;
-                v |= v >> 16;
-                v++;
-                return v;
-            }
             
-            ulong Morton(uint x, uint y, uint z, int bits){
-                uint answer = 0;
-                for (int i = 0; i < (8 * sizeof(uint))/3; ++i) {
-                    answer |= ((x & ((uint)1 << i)) << 2*i) | ((y & ((uint)1 << i)) << (2*i + 1)) | ((z & ((uint)1 << i)) << (2*i + 2));
-                }
-                return answer;
-            }
-            
-            
-            public void RadixSort(int[] a)
+            public void RadixSort(NativeArray<int> a, int bits)
             {  
                 // our helper array 
-                int[] t=new int[a.Length]; 
+                var t= new NativeArray<int>(a.Length, Allocator.Temp); 
 
                 // number of bits our group will be long 
                 int r=4; // try to set this also to 2, 8 or 16 to see if it is 
                 // quicker or not 
 
-                // number of bits of a C# int 
-                int b=32; 
-
                 // counting and prefix arrays
                 // (note dimensions 2^r which is the number of all possible values of a 
                 // r-bit number) 
-                int[] count=new int[1<<r]; 
-                int[] pref=new int[1<<r]; 
+                var count = new NativeArray<int>(1<<r, Allocator.Temp); 
+                var pref = new NativeArray<int>(1<<r, Allocator.Temp); 
 
                 // number of groups 
-                int groups=(int)Math.Ceiling((double)b/(double)r); 
+                int groups=(int)Math.Ceiling((double)bits/(double)r); 
 
                 // the mask to identify groups 
                 int mask = (1<<r)-1; 
@@ -255,7 +233,7 @@ namespace NativeBVH {
                         t[pref[(a[i]>>shift)&mask]++]=a[i]; 
 
                     // a[]=t[] and start again until the last group 
-                    t.CopyTo(a,0); 
+                    t.CopyTo(a); 
                 } 
                 // a is sorted 
             }

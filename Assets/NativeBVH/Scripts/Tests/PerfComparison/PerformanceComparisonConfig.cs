@@ -3,7 +3,7 @@ using Random = UnityEngine.Random;
 
 namespace NativeBVH {
     public static class PerformanceComparisonConfig {
-        public const int ObjectCount = 1500;
+        public const int ObjectCount = 15000;
         public const int RaycastAmount = 1000;
 
         public const float SpawnRange = 300;
