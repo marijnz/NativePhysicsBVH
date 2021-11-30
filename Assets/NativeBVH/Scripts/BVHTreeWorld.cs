@@ -112,7 +112,7 @@ namespace NativeBVH {
                 int dimensions = 3;
                 
                 var desiredBits = (int) Mathf.Log(Bodies.Length, 4); // AAC uses a log4 to determine morton bit count 
-                int bits = math.min(desiredBits, 32 / 3);
+                int bits = math.min(desiredBits, 32 / dimensions);
                 var apart = bits;
                 
                 var fields = 4;
